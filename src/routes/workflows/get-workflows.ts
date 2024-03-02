@@ -1,0 +1,42 @@
+import {
+  CustomError,
+  MiddlewareArgumentsInputFunction,
+  RouteArguments,
+  RouteSchema,
+  schemaValidationMiddleware,
+} from '@myfile/core-sdk';
+import { getDB } from '../../lib/db';
+import * as Joi from 'joi';
+import { WorkFlowSchema } from '../../lib/route-schemas/workflow.schema';
+
+export const routeSchema: RouteSchema = {
+  responseBody: Joi.array().items(WorkFlowSchema),
+};
+
+export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
+  try {
+    const db = getDB();
+    return await db.workflow.findMany({
+      where: {
+        DeletedAt: null,
+      },
+      select: {
+        id: true,
+        Name: true,
+        Description: true,
+        CreatedAt: true,
+        WorkflowStage: true,
+      },
+    });
+  } catch (error: any) {
+    console.log(error);
+    throw new CustomError(error._message || JSON.stringify(error), error._httpStatusCode || 500);
+  }
+};
+
+const routeModule = {
+  routeChain: [schemaValidationMiddleware(routeSchema), handler],
+  routeSchema,
+};
+
+export default routeModule;

@@ -1,0 +1,300 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Case {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Title                String?
+  CaseType             String?
+  PercentComplete      Decimal?             @db.Decimal
+  AgencyCaseIdentifier String?
+  CaseAttributes       Json?
+  Status               String?
+  CreatedAt            DateTime?            @default(now()) @db.Timestamptz
+  LastModifiedAt       DateTime?            @updatedAt @db.Timestamptz
+  DeletedAt            DateTime?            @db.Timestamptz
+  CaseCriteria         CaseCriterion[]      @relation("FK_Case_to_CaseCriterion")
+  CaseNotes            CaseNote[]           @relation("FK_Case_to_CaseNote")
+  CaseTeamAssignments  CaseTeamAssignment[] @relation("FK_Case_to_CaseTeamAssignment")
+  CaseFiles            CaseFile[]           @relation("FK_Case_to_CaseFile")
+  CaseApplicants       CaseApplicant[]      @relation("FK_Case_to_CaseApplicant")
+}
+
+model CaseApplicant {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  CreatedAt          DateTime?         @default(now()) @db.Timestamptz
+  LastModifiedAt     DateTime?         @updatedAt @db.Timestamptz
+  DeletedAt          DateTime?         @db.Timestamptz
+  CaseId             String?           @db.Uuid
+  UserFamilyMemberId String?           @db.Uuid
+  UserFamilyMember   UserFamilyMember? @relation("FK_CaseApplicant_to_UserFamilyMember", fields: [UserFamilyMemberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Case               Case?             @relation("FK_Case_to_CaseApplicant", fields: [CaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model CaseCriterion {
+  id                       String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Status                   String?
+  LastModifiedByUserId     String?                 @db.Uuid
+  CreatedAt                DateTime?               @default(now()) @db.Timestamptz
+  LastModifiedAt           DateTime?               @updatedAt @db.Timestamptz
+  CaseId                   String?                 @db.Uuid
+  DeletedAt                DateTime?               @db.Timestamptz
+  WorkflowStageCriterionId String?                 @db.Uuid
+  Case                     Case?                   @relation("FK_Case_to_CaseCriterion", fields: [CaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  WorkflowStageCriterion   WorkflowStageCriterion? @relation("FK_WorkflowStageCriterion_to_CaseCriterion", fields: [WorkflowStageCriterionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  LastModifiedByUser       User?                   @relation("FK_User_to_CaseCriterion", fields: [LastModifiedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model CaseNote {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  NoteText          String?
+  ParentNoteId      String?    @db.Uuid
+  AuthorUserId      String?    @db.Uuid
+  CreatedAt         DateTime?  @default(now()) @db.Timestamptz
+  LastModifiedAt    DateTime?  @updatedAt @db.Timestamptz
+  DeletedAt         DateTime?  @db.Timestamptz
+  NoteAudienceScope String?
+  AuthorUser        User?      @relation("FK_User_to_CaseNote", fields: [AuthorUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CaseId            String?    @db.Uuid
+  Case              Case?      @relation("FK_Case_to_CaseNote", fields: [CaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CaseNote          CaseNote?  @relation("CaseNoteToCaseNote", fields: [ParentNoteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CaseNoteReplies   CaseNote[] @relation("CaseNoteToCaseNote")
+}
+
+model CaseTeamAssignment {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  UserId         String?   @db.Uuid
+  CaseId         String?   @db.Uuid
+  CreatedAt      DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt DateTime? @updatedAt @db.Timestamptz
+  DeletedAt      DateTime? @db.Timestamptz
+  CaseRole       String?
+  Case           Case?     @relation("FK_Case_to_CaseTeamAssignment", fields: [CaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User           User?     @relation("FK_User_to_CaseTeamAssignment", fields: [UserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model CaseFile {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  UserFileId      String?   @db.Uuid
+  CreatedAt       DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt  DateTime? @updatedAt @db.Timestamptz
+  DeletedAt       DateTime? @db.Timestamptz
+  CreatedByUserId String?   @db.Uuid
+  CaseId          String?   @db.Uuid
+  Case            Case?     @relation("FK_Case_to_CaseFile", fields: [CaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  UserFile        UserFile? @relation("FK_UserFile_to_CaseFile", fields: [UserFileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model PlatformActivityLog {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ActivityType              String?
+  ActivityValue             String?
+  RelatedId                 String?   @db.Uuid
+  CreatedAt                 DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt            DateTime? @updatedAt @db.Timestamptz
+  ActivityGeneratedByUserId String?   @db.Uuid
+  Metadata                  Json?     @db.Json
+  User                      User?     @relation("FK_User_to_PlatformActivityLog", fields: [ActivityGeneratedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ActivityType, RelatedId], map: "IdxPlatformActivityLog")
+}
+
+model StakeholderGroup {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Name                 String?
+  Description          String?
+  CreatedAt            DateTime?              @default(now()) @db.Timestamptz
+  LastModifiedAt       DateTime?              @updatedAt @db.Timestamptz
+  StakeholderGroupRole StakeholderGroupRole[] @relation("FK_StakeholderGroup_to_StakeholderGroupRole")
+}
+
+model StakeholderGroupRole {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  StakeholderGroupId        String?                     @db.Uuid
+  Name                      String?
+  Description               String?
+  CreatedAt                 DateTime?                   @default(now()) @db.Timestamptz
+  LastModifiedAt            DateTime?                   @updatedAt @db.Timestamptz
+  StakeholderGroup          StakeholderGroup?           @relation("FK_StakeholderGroup_to_StakeholderGroupRole", fields: [StakeholderGroupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User_StakeholderGroupRole User_StakeholderGroupRole[] @relation("FK_User_StakeholderGroupRole_to_StakeholderGroupRole")
+}
+
+model UploadedMediaAssetVersion {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ContentType          String?
+  SizeInBytes          Int?
+  OriginalFilename     String?
+  CreatedAt            DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt       DateTime? @updatedAt @db.Timestamptz
+  DeletedAt            DateTime? @db.Timestamptz
+  CreatedByUserId      String?   @db.Uuid
+  LastModifiedByUserId String?   @db.Uuid
+  UserFileId           String?   @db.Uuid
+  UserFile             UserFile? @relation("FK_UserFile_to_UploadedMediaAssetVersion", fields: [UserFileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ContentType], map: "IdxUploadedMediaAssetVersion")
+}
+
+model User {
+  id                                                     String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  LegacyId                                               String?
+  FirstName                                              String?
+  DOB                                                    DateTime?                   @db.Timestamptz
+  TOSAcceptedAt                                          DateTime?                   @db.Timestamptz
+  PPAcceptedAt                                           DateTime?                   @db.Timestamptz
+  LastName                                               String?
+  IdpId                                                  String?
+  LanguageId                                             String?                     @db.Uuid
+  Email                                                  String?
+  CreatedAt                                              DateTime?                   @default(now()) @db.Timestamptz
+  LastModifiedAt                                         DateTime?                   @updatedAt @db.Timestamptz
+  DeletedAt                                              DateTime?                   @db.Timestamptz
+  UserWorkflows                                          UserWorkflow[]              @relation("FK_User_to_UserWorkflow")
+  CaseCriteria                                           CaseCriterion[]             @relation("FK_User_to_CaseCriterion")
+  CaseNotes                                              CaseNote[]                  @relation("FK_User_to_CaseNote")
+  Language                                               Language?                   @relation("FK_User_to_Language", fields: [LanguageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CaseTeamAssignments                                    CaseTeamAssignment[]        @relation("FK_User_to_CaseTeamAssignment")
+  PlatformActivityLogs                                   PlatformActivityLog[]       @relation("FK_User_to_PlatformActivityLog")
+  UserAttribute_UserAttribute_CreatedByUserIdToUser      UserAttribute[]             @relation("UserAttribute_CreatedByUserIdToUser")
+  UserAttribute_UserAttribute_LastModifiedByUserIdToUser UserAttribute[]             @relation("UserAttribute_LastModifiedByUserIdToUser")
+  UserFiles                                              UserFile[]                  @relation("FK_UserFile_to_User")
+  StakeholderGroupRoles                                  User_StakeholderGroupRole[] @relation("FK_User_StakeholderGroupRole_to_User")
+  UserFamilyMembers                                      UserFamilyMember[]          @relation("FK_User_to_UserFamilyMember")
+}
+
+model UserAttribute {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  AtttributeName       String?
+  AttributeValue       String?
+  CreatedAt            DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt       DateTime? @updatedAt @db.Timestamptz
+  CreatedByUserId      String?   @db.Uuid
+  LastModifiedByUserId String?   @db.Uuid
+  CreatedByUser        User?     @relation("UserAttribute_CreatedByUserIdToUser", fields: [CreatedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  LastModifiedByUser   User?     @relation("UserAttribute_LastModifiedByUserIdToUser", fields: [LastModifiedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([AtttributeName], map: "Idx")
+}
+
+model GeneratedFile {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  CreatedAt        DateTime?  @default(now()) @db.Timestamptz
+  LastModifiedAt   DateTime?  @updatedAt @db.Timestamptz
+  DeletedAt        DateTime?  @db.Timestamptz
+  OriginalFilename String?
+  ContentType      String?
+  SizeInBytes      Int?
+  Title            String?
+  Status           String?
+  FromUserFiles    UserFile[] @relation("FK_UserFile_to_GeneratedFile")
+}
+
+model UserFile {
+  id                         String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  LegacyId                   String?
+  ContentType                String?
+  ActiveVersionId            String?                     @db.Uuid
+  UserFamilyMemberId         String?                     @db.Uuid
+  OriginalFilename           String?
+  PageNumber                 Int?
+  Status                     String?
+  Title                      String?
+  GeneratedFileId            String?                     @db.Uuid
+  CreatedAt                  DateTime?                   @default(now()) @db.Timestamptz
+  LastModifiedAt             DateTime?                   @updatedAt @db.Timestamptz
+  DeletedAt                  DateTime?                   @db.Timestamptz
+  OwnerUserId                String?                     @db.Uuid
+  CreatedByUserId            String?                     @db.Uuid
+  LastModifiedByUserId       String?                     @db.Uuid
+  GeneratedFile              GeneratedFile?              @relation("FK_UserFile_to_GeneratedFile", fields: [GeneratedFileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CaseFile                   CaseFile[]                  @relation("FK_UserFile_to_CaseFile")
+  UserFamilyMember           UserFamilyMember?           @relation("FK_UserFile_to_UserFamilyMember", fields: [UserFamilyMemberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  UploadedMediaAssetVersions UploadedMediaAssetVersion[] @relation("FK_UserFile_to_UploadedMediaAssetVersion")
+  User                       User?                       @relation("FK_UserFile_to_User", fields: [OwnerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ContentType], map: "IdxUserFile")
+}
+
+model UserFamilyMember {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  CreatedAt      DateTime?       @default(now()) @db.Timestamptz
+  LastModifiedAt DateTime?       @updatedAt @db.Timestamptz
+  DeletedAt      DateTime?       @db.Timestamptz
+  FirstName      String
+  LastName       String
+  UserId         String?         @db.Uuid
+  DOB            DateTime        @db.Timestamptz
+  Relationship   String
+  User           User?           @relation("FK_User_to_UserFamilyMember", fields: [UserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CaseApplicants CaseApplicant[] @relation("FK_CaseApplicant_to_UserFamilyMember")
+  UserFiles      UserFile[]      @relation("FK_UserFile_to_UserFamilyMember")
+}
+
+model User_StakeholderGroupRole {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  StakeholderGroupRoleId String?               @db.Uuid
+  UserId                 String?               @db.Uuid
+  StakeholderGroupRole   StakeholderGroupRole? @relation("FK_User_StakeholderGroupRole_to_StakeholderGroupRole", fields: [StakeholderGroupRoleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User                   User?                 @relation("FK_User_StakeholderGroupRole_to_User", fields: [UserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Workflow {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  WorkflowStage  WorkflowStage[] @relation("FK_WorkflowStage_to_Workflow")
+  CreatedAt      DateTime?       @default(now()) @db.Timestamptz
+  LastModifiedAt DateTime?       @updatedAt @db.Timestamptz
+  DeletedAt      DateTime?       @db.Timestamptz
+  UserWorkflows  UserWorkflow[]  @relation("FK_Workflow_to_UserWorkflow")
+  Description    String?
+  Name           String?
+}
+
+model WorkflowStage {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  StageName             String?
+  CreatedAt             DateTime?                @default(now()) @db.Timestamptz
+  LastModifiedAt        DateTime?                @updatedAt @db.Timestamptz
+  DeletedAt             DateTime?                @db.Timestamptz
+  WorflowId             String?                  @db.Uuid
+  WorkFlow              Workflow?                @relation("FK_WorkflowStage_to_Workflow", fields: [WorflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  WorkflowStageCriteria WorkflowStageCriterion[] @relation("FK_WorkflowStage_to_WorkflowStageCriterion")
+}
+
+model WorkflowStageCriterion {
+  id                       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  CaseWorkflowStageId      String?         @db.Uuid
+  Name                     String?
+  CriterionFulfillmentType String?
+  CreatedAt                DateTime?       @default(now()) @db.Timestamptz
+  LastModifiedAt           DateTime?       @updatedAt @db.Timestamptz
+  DeletedAt                DateTime?       @db.Timestamptz
+  CaseCriteria             CaseCriterion[] @relation("FK_WorkflowStageCriterion_to_CaseCriterion")
+  WorkflowStage            WorkflowStage?  @relation("FK_WorkflowStage_to_WorkflowStageCriterion", fields: [CaseWorkflowStageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model UserWorkflow {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  UserId         String?   @db.Uuid
+  WorkflowId     String?   @db.Uuid
+  CreatedAt      DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt DateTime? @updatedAt @db.Timestamptz
+  DeletedAt      DateTime? @db.Timestamptz
+  User           User?     @relation("FK_User_to_UserWorkflow", fields: [UserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Workflow       Workflow? @relation("FK_Workflow_to_UserWorkflow", fields: [WorkflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Language {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Name           String
+  Code           String
+  CreatedAt      DateTime? @default(now()) @db.Timestamptz
+  LastModifiedAt DateTime? @updatedAt @db.Timestamptz
+  DeletedAt      DateTime? @db.Timestamptz
+  Users          User[]    @relation("FK_User_to_Language")
+}
