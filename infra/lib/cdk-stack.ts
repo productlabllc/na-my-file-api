@@ -24,21 +24,21 @@ export class CdkStack extends Stack {
     const postgresSecret = secretsmanager.Secret.fromSecretCompleteArn(this, 'postgres-secret', postgresSecretArn);
 
     // Prisma DB Migration
-    const prismaDbMigration = new PrismaMigrationLambda(this, `prisma-db-migrator${resourceSuffix}`, {
-      appMetadata,
-      awsRegion,
-      deploymentTarget,
-      envVars: {
-        DB_CREDS: postgresSecret.secretValue.toString(),
-        REGION: this.region,
-      },
-      name: 'prisma-db-migration-custom-resource-lambda',
-      ssmVpcId: vpcId,
-      lambdaMainHandlerPath: 'src/lambda-db-migrations.ts',
-      lambdaMemorySizeInMb: 512,
-      lambdaTimeoutInSeconds: 60*5,
-      noBundlingNodeModules: [],
-    });
+    // const prismaDbMigration = new PrismaMigrationLambda(this, `prisma-db-migrator${resourceSuffix}`, {
+    //   appMetadata,
+    //   awsRegion,
+    //   deploymentTarget,
+    //   envVars: {
+    //     DB_CREDS: postgresSecret.secretValue.toString(),
+    //     REGION: this.region,
+    //   },
+    //   name: 'prisma-db-migration-custom-resource-lambda',
+    //   ssmVpcId: vpcId,
+    //   lambdaMainHandlerPath: 'src/lambda-db-migrations.ts',
+    //   lambdaMemorySizeInMb: 512,
+    //   lambdaTimeoutInSeconds: 60*5,
+    //   noBundlingNodeModules: [],
+    // });
 
     // API Stack
     const api = new LambdaProxyApi(this, `api${resourceSuffix}`, {

@@ -1,7 +1,7 @@
 # . ./params.env
 rm -rf ./dist
 npm run build
-cp ../my-file-core-sdk-pkg/myfile-core-sdk-0.1.0.tgz ./
+cp ../na-my-file-core-sdk-pkg/myfile-core-sdk-0.1.0.tgz ./
 
 # cp ~/.npmrc ./dist
 # docker build \
