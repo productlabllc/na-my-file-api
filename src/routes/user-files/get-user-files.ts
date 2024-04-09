@@ -9,10 +9,14 @@ import {
 import { getDB } from '../../lib/db';
 import { GetUserFilesResponseSchema } from '../../lib/route-schemas/user-file.schema';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
-import { USER_FILE_STATUS } from '../../lib/constants';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { CAN_DOWNLOAD_USER_FILE, USER_FILE_STATUS } from '../../lib/constants';
+import Joi = require('joi');
 
 export const routeSchema: RouteSchema = {
+  params: {
+    userId: Joi.string().uuid(),
+  },
   responseBody: GetUserFilesResponseSchema,
 };
 
@@ -22,14 +26,22 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     const jwt: NycIdJwtType = input.routeData.jwt;
 
-    const user = await getUserByIdpId(jwt?.GUID);
+    const user = await getUserByEmail(jwt?.email);
 
-    const userId = user.id;
+    const { userId } = input.params as { userId: string };
+
+    const canDownloadFile = await user.isUserInGroup(CAN_DOWNLOAD_USER_FILE);
+
+    const userOwnsTheFiles = userId === user.id;
+
+    if (!canDownloadFile && !userOwnsTheFiles) {
+      throw new CustomError('User does not have permission to download this file', 403);
+    }
 
     const userFiles = await db.userFile.findMany({
       where: {
-        OwnerUserId: userId,
         DeletedAt: null,
+        OwnerUserId: userId,
         UploadedMediaAssetVersions: {
           some: {
             DeletedAt: null,
@@ -45,6 +57,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
       select: {
         id: true,
+        OwnerUserId: true,
         OriginalFilename: true,
         Title: true,
         ContentType: true,
@@ -61,6 +74,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
         },
       },
     });
+
     return userFiles;
   } catch (error: any) {
     throw new CustomError(error._message || JSON.stringify(error), error._httpStatusCode || 500);

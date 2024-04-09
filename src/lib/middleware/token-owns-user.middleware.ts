@@ -1,27 +1,27 @@
 import { CustomError, RouteArguments } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../data/get-user-by-idp-id';
-import _ from 'lodash';
+import { getUserByEmail } from '../data/get-user-by-idp-id';
+import _ = require('lodash');
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 
 export const tokenOwnsRequestedUser =
-  (idpIdPath: string) =>
+  (userIdPath: string) =>
   async (incomingData: RouteArguments): Promise<RouteArguments> => {
     const { routeData = {} } = incomingData;
-    const idpId = _.get(incomingData, idpIdPath, null) as string | null;
-    if (!idpId) {
-      throw new CustomError(`partnerId at path "${idpIdPath}" was not found.`, 401);
+    const userId = _.get(incomingData, userIdPath, null) as string | null;
+    if (!userId) {
+      throw new CustomError(`userId in payload at path "${userIdPath}" was not found.`, 401);
     }
     const jwt = incomingData.routeData.jwt as NycIdJwtType | undefined | null;
     if (!jwt) {
       throw new CustomError('Token does not exist.', 403);
     }
-    const user = await getUserByIdpId(jwt['GUID']);
+    const user = await getUserByEmail(jwt?.email);
     if (!user) {
       throw new CustomError('User does not exist.', 401);
     } else {
-      if (jwt['GUID'] !== idpId) {
+      if (jwt['GUID'] !== userId) {
         throw new CustomError(
-          `User's can perform profile modifications only unto themselves. ${jwt['GUID']} != ${idpId}.`,
+          `This user cannot perform this action only to items owned or created by themselves. ${jwt['GUID']} != ${userId}.`,
           403,
         );
       }

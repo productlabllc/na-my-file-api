@@ -6,18 +6,19 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { CreateFamilyMemberRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import {
-  CreateUserFamilyRequestSchema,
-  CreateUserFamilyResponseSchema,
-} from '../../lib/route-schemas/user-family.schema';
+  CreateFamilyMemberRequestSchema,
+  CreateFamilyMemberResponseSchema,
+} from '../../lib/route-schemas/family-member.schema';
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
-  requestBody: CreateUserFamilyRequestSchema,
-  responseBody: CreateUserFamilyResponseSchema,
+const routeSchema: RouteSchema = {
+  requestBody: CreateFamilyMemberRequestSchema,
+  responseBody: CreateFamilyMemberResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
@@ -27,7 +28,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
   const userId = user.id;
 
@@ -46,6 +47,16 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       CreatedAt: true,
       LastModifiedAt: true,
     },
+  });
+
+  await logActivity({
+    activityType: 'CREATE_FAMILY_MEMBER',
+    activityValue: `User (${user.Email} - ${user.IdpId}) created family member.`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input, familyMember }),
+    activityRelatedEntityId: familyMember.id,
+    activityRelatedEntity: 'FAMILY_MEMBER',
   });
 
   return familyMember;

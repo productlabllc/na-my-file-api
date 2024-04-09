@@ -8,17 +8,17 @@ import {
 } from '@myfile/core-sdk';
 import { UpdateUserFileRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getDB } from '../../lib/db';
 
 import {
-  UpdateUserFamilyRequestSchema,
-  UpdateUserFamilyResponseSchema,
-} from '../../lib/route-schemas/user-family.schema';
+  UpdateFamilyMemberRequestSchema,
+  UpdateFamilyMemberResponseSchema,
+} from '../../lib/route-schemas/family-member.schema';
 
 export const routeSchema: RouteSchema = {
-  requestBody: UpdateUserFamilyRequestSchema,
-  responseBody: UpdateUserFamilyResponseSchema,
+  requestBody: UpdateFamilyMemberRequestSchema,
+  responseBody: UpdateFamilyMemberResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
@@ -28,7 +28,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     const db = getDB();
     const jwt: NycIdJwtType = input.routeData.jwt;
 
-    const user = await getUserByIdpId(jwt?.GUID);
+    const user = await getUserByEmail(jwt?.email);
 
     const userId = user.id;
 

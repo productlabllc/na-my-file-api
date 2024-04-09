@@ -1,4 +1,4 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 
 export const PlatformActivityLogsSchema = Joi.object({
   id: Joi.string().uuid().required(),

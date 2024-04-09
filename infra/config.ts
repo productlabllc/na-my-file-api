@@ -12,6 +12,7 @@ const appName = process.env.APP_NAME!.toLowerCase().replace(/[ \.]/g, '-');
 
 export interface AppMetadata {
   Name: string;
+  AppName: string;
   StackName: string;
   Description: string;
   GitCommit: string;
@@ -26,6 +27,7 @@ export interface AppMetadata {
 
 export const appTags: AppMetadata = {
   Name: `${appName}-${process.env.DEPLOYMENT_TARGET}`,
+  AppName: appName,
   StackName: `${appName}-stack-${process.env.DEPLOYMENT_TARGET}`,
   Description: process.env.APP_DESCRIPTION as string,
   GitCommit: process.env.GIT_COMMIT as string,

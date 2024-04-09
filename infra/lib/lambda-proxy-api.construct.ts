@@ -1,6 +1,6 @@
 import { aws_lambda_nodejs as lambda, aws_ec2 as ec2, aws_iam as iam, aws_sqs as sqs, Duration } from 'aws-cdk-lib';
-import { HttpApi, HttpRoute, HttpRouteKey, HttpMethod, PayloadFormatVersion } from '@aws-cdk/aws-apigatewayv2-alpha';
-import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+import { HttpApi, HttpRoute, HttpRouteKey, HttpMethod, PayloadFormatVersion } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Construct } from 'constructs';
 import { RouteConfig } from '@myfile/core-sdk';
 import { ExtendedStackProps } from './stack-interfaces';
@@ -18,7 +18,8 @@ export interface LambdaProxyApiProps extends ExtendedStackProps {
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
-  sqsBroadcastMessageQueueArn: string;
+  sqsBroadcastMessageQueue: sqs.IQueue;
+  sqsActivityLogQueue: sqs.IQueue;
 }
 
 export class LambdaProxyApi extends Construct {
@@ -38,8 +39,6 @@ export class LambdaProxyApi extends Construct {
       vpcId: props.ssmVpcId,
     });
 
-    // const sqsBroadcastMessageQueue = sqs.Queue.fromQueueArn(this, 'queue-broadcast-message', props.sqsBroadcastMessageQueueArn);
-
     const lambdaRouteProxyEntryHandlerName = props.name;
     this.lambdaProxyRouteEntryHandler = new lambda.NodejsFunction(
       this,
@@ -55,8 +54,9 @@ export class LambdaProxyApi extends Construct {
         environment: {
           ...props.envVars,
           TIMESTAMP: Date.now().toString(),
-          // SQS_BROADCAST_MSG_QUEUE_URL: sqsBroadcastMessageQueue.queueUrl,
-          // SQS_BROADCAST_MSG_QUEUE_NAME: sqsBroadcastMessageQueue.queueName,
+          SQS_BROADCAST_MSG_QUEUE_URL: props.sqsBroadcastMessageQueue.queueUrl,
+          SQS_BROADCAST_MSG_QUEUE_NAME: props.sqsBroadcastMessageQueue.queueName,
+          SQS_ACTIVITY_LOG_QUEUE_URL: props.sqsActivityLogQueue.queueUrl,
         },
         logRetention: RetentionDays.ONE_WEEK,
         // bundling: {
@@ -87,15 +87,15 @@ export class LambdaProxyApi extends Construct {
       },
     );
 
-    // sqsBroadcastMessageQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
+    props.sqsBroadcastMessageQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
+    props.sqsActivityLogQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
 
-    /*
-    new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      resources: ['*'],
-      actions: ['lambda:InvokeFunction'],
-    })
-    */
+    // new iam.PolicyStatement({
+    //   effect: iam.Effect.ALLOW,
+    //   resources: ['*'],
+    //   actions: ['lambda:InvokeFunction'],
+    // })
+    
     if (props.iamPolicy) {
       this.lambdaProxyRouteEntryHandler.addToRolePolicy(props.iamPolicy);
     }

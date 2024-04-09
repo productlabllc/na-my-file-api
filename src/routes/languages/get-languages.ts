@@ -6,7 +6,7 @@ import {
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
 import { getDB } from '../../lib/db';
-import * as Joi from 'joi';
+import Joi = require('joi');
 import { LanguageSchema } from '../../lib/route-schemas/language.schema';
 
 export const routeSchema: RouteSchema = {

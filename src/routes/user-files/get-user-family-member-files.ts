@@ -8,12 +8,15 @@ import {
 } from '@myfile/core-sdk';
 import { getDB } from '../../lib/db';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { GetUserFilesResponseSchema } from '../../lib/route-schemas/user-file.schema';
-import * as Joi from 'joi';
-import { USER_FILE_STATUS } from '../../lib/constants';
+import Joi = require('joi');
+import { CAN_DOWNLOAD_USER_FILE, USER_FILE_STATUS } from '../../lib/constants';
 
 export const routeSchema: RouteSchema = {
+  params: {
+    userId: Joi.string().uuid(),
+  },
   query: {
     userFamilyMemberId: Joi.string().uuid().required(),
   },
@@ -26,9 +29,16 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     const jwt: NycIdJwtType = input.routeData.jwt;
 
-    const user = await getUserByIdpId(jwt?.GUID);
+    const user = await getUserByEmail(jwt?.email);
 
-    const userId = user.id;
+    const userId = input.params.userId as string;
+
+    const canDownloadFile = await user.isUserInGroup(CAN_DOWNLOAD_USER_FILE);
+    const ownedByUser = userId === user.id;
+
+    if (!canDownloadFile && !ownedByUser) {
+      throw new CustomError('User does not have permission to download this file', 403);
+    }
 
     const { userFamilyId } = input.query as { userFamilyId: string };
     const userFiles = await db.userFile.findMany({

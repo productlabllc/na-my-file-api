@@ -7,26 +7,41 @@ import {
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
 import { getDB } from '../../lib/db';
-import { UserFamilySchema } from '../../lib/route-schemas/user-family.schema';
-import * as Joi from 'joi';
+import { FamilyMemberSchema } from '../../lib/route-schemas/family-member.schema';
+import Joi = require('joi');
+import { logActivity } from '../../lib/sqs';
+import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   params: {
     id: Joi.string().required(),
   },
-  responseBody: UserFamilySchema,
+  responseBody: FamilyMemberSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
   const db = getDB();
 
   const id = input.params.id as string;
+  const jwt: NycIdJwtType = input.routeData.jwt;
+  const user = await getUserByEmail(jwt?.email);
 
   const data = await db.userFamilyMember.findFirst({
     where: {
       id,
       DeletedAt: null,
     },
+  });
+
+  await logActivity({
+    activityType: 'GET_FAMILY_MEMBER_BY_ID',
+    activityValue: `User (${user.Email} - ${user.IdpId}) retrieved family member.`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input }),
+    activityRelatedEntityId: id,
+    activityRelatedEntity: 'FAMILY_MEMBER',
   });
 
   return data;

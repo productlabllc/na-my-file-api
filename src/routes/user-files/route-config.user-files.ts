@@ -9,7 +9,7 @@ export default [
     generateOpenApiDocs: true,
     handlerPath: join(routesSourceBaseDirectory, 'user-files/get-user-files'),
     method: 'GET',
-    path: `${routesBaseUrlPath}/users/files`,
+    path: `${routesBaseUrlPath}/users/{userId}/files`,
   },
   {
     description: 'Create user file.',
@@ -41,7 +41,7 @@ export default [
     generateOpenApiDocs: true,
     handlerPath: join(routesSourceBaseDirectory, 'user-files/get-user-family-member-files'),
     method: 'GET',
-    path: `${routesBaseUrlPath}/users/files/family-member`,
+    path: `${routesBaseUrlPath}/users/{userId}/files/family-member`,
   },
   {
     description: 'Get download url for user file.',

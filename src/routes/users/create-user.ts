@@ -7,13 +7,13 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { CreateUserRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import { CreateUserRequestSchema, CreateUserResponseSchema } from '../../lib/route-schemas/user.schema';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   requestBody: CreateUserRequestSchema,
   responseBody: CreateUserResponseSchema,
 };
@@ -25,7 +25,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
   const userId = user?.id;
 

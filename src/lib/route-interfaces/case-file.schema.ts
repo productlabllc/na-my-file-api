@@ -10,3 +10,7 @@ export interface AddCaseFileRequest {
 export interface DeleteCaseFileRequest {
   UserFileIds: string[];
 }
+
+export interface UpdateCaseFileRequest {
+  Status: string;
+}

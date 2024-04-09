@@ -3,8 +3,21 @@
  * Do not modify this file manually
  */
 
-import { CaseApplicant } from '@prisma/client';
-import { UserFile, User } from '.';
+import { CaseApplicant, UserFile, User } from '.';
+
+export interface Case {
+  AgencyCaseIdentifier?: string;
+  CaseApplicants?: CaseApplicant[];
+  CaseAttributes?: CaseAttributes;
+  CaseCriteria?: CaseCriterion[];
+  CaseFiles?: CaseFile[];
+  CaseNotes?: CaseNote[];
+  CaseTeamAssignments?: CaseTeamAssignment[];
+  CaseType?: string;
+  PercentComplete?: number;
+  Title?: string;
+  id: string;
+}
 
 export type CaseAttributes = {
   name: string;
@@ -44,20 +57,6 @@ export interface CaseNote {
   id: string;
 }
 
-export interface CaseSchema {
-  AgencyCaseIdentifier?: string;
-  CaseApplicants?: CaseApplicant[];
-  CaseAttributes?: CaseAttributes;
-  CaseCriteria?: CaseCriterion[];
-  CaseFiles?: CaseFile[];
-  CaseNotes?: CaseNote[];
-  CaseTeamAssignments?: CaseTeamAssignment[];
-  CaseType?: string;
-  PercentComplete?: number;
-  Title?: string;
-  id: string;
-}
-
 export interface CaseTeamAssignment {
   Case?: object;
   CaseId?: string;
@@ -73,9 +72,10 @@ export interface CreateCaseRequestBody {
   CaseTitle?: string;
   CaseType: string;
   FamilyMemberIds?: string[];
+  WorkflowId: string;
 }
 
-export interface CreateCaseResponseSchema {
+export interface CreateCaseResponse {
   AgencyCaseIdentifier?: string;
   CaseApplicants?: CaseApplicant[];
   CaseAttributes?: CaseAttributes;
@@ -89,7 +89,7 @@ export interface CreateCaseResponseSchema {
   id: string;
 }
 
-export interface GetCaseResponseSchema {
+export interface GetCaseResponse {
   AgencyCaseIdentifier?: string;
   CaseApplicants?: CaseApplicant[];
   CaseAttributes?: CaseAttributes;
@@ -105,19 +105,7 @@ export interface GetCaseResponseSchema {
 
 export type GetCaseUserFilesResponse = UserFile[];
 
-export type GetUserFileCasesResponse = {
-  AgencyCaseIdentifier?: string;
-  CaseApplicants?: CaseApplicant[];
-  CaseAttributes?: CaseAttributes;
-  CaseCriteria?: CaseCriterion[];
-  CaseFiles?: CaseFile[];
-  CaseNotes?: CaseNote[];
-  CaseTeamAssignments?: CaseTeamAssignment[];
-  CaseType?: string;
-  PercentComplete?: number;
-  Title?: string;
-  id: string;
-}[];
+export type GetUserFileCasesResponse = Case[];
 
 export interface UpdateCaseRequestBody {
   AgencyCaseIdentifier?: string;
@@ -128,7 +116,7 @@ export interface UpdateCaseRequestBody {
   Status?: string;
 }
 
-export interface UpdateCaseResponseSchema {
+export interface UpdateCaseResponse {
   AgencyCaseIdentifier?: string;
   CaseApplicants?: CaseApplicant[];
   CaseAttributes?: CaseAttributes;
@@ -142,16 +130,4 @@ export interface UpdateCaseResponseSchema {
   id: string;
 }
 
-export type getCaseResponse = {
-  AgencyCaseIdentifier?: string;
-  CaseApplicants?: CaseApplicant[];
-  CaseAttributes?: CaseAttributes;
-  CaseCriteria?: CaseCriterion[];
-  CaseFiles?: CaseFile[];
-  CaseNotes?: CaseNote[];
-  CaseTeamAssignments?: CaseTeamAssignment[];
-  CaseType?: string;
-  PercentComplete?: number;
-  Title?: string;
-  id: string;
-}[];
+export type getCaseResponse = Case[];

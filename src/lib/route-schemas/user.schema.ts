@@ -1,4 +1,4 @@
-import * as joi from 'joi';
+import joi = require('joi');
 import { PlatformActivityLogsSchema } from './platform-activity.schema';
 import { WorkFlowSchema } from './workflow.schema';
 

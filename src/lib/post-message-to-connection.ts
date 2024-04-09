@@ -1,5 +1,5 @@
 import httpsPromise from './http-promise';
-import { sign } from 'aws4';
+import aws4 = require('aws4');
 import { IncomingMessage } from 'http';
 
 type MethodParams = {
@@ -38,7 +38,7 @@ export default async ({
       'Content-Type': contentType || 'text/plain',
     },
   };
-  sign(opts, { accessKeyId, secretAccessKey, sessionToken });
+  aws4.sign(opts, { accessKeyId, secretAccessKey, sessionToken });
 
   let response: any = '';
   try {

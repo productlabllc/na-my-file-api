@@ -1,7 +1,8 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 import userSchema from './user.schema';
 import userFileSchema from './user-file.schema';
 import UserFileSchema from './user-file.schema';
+import { CaseApplicantSchema } from './case-applicant.schema';
 
 export const CaseAttributeSchema = Joi.array()
   .items(
@@ -54,13 +55,6 @@ export const CaseTeamAssignmentSchema = Joi.object({
   User: userSchema,
 }).meta({ className: 'CaseTeamAssignment' });
 
-export const CaseApplicantSchema = Joi.object({
-  id: Joi.string().uuid().required(),
-  UserFamilyMemberId: Joi.string().uuid(),
-  UserFamilyMember: Joi.object(),
-  Case: Joi.object(),
-}).meta({ className: 'CaseApplicant' });
-
 export const CaseSchema = Joi.object({
   Title: Joi.string(),
   id: Joi.string().uuid().required(),
@@ -73,7 +67,7 @@ export const CaseSchema = Joi.object({
   CaseTeamAssignments: Joi.array().items(CaseTeamAssignmentSchema),
   CaseFiles: Joi.array().items(CaseFileSchema),
   CaseApplicants: Joi.array().items(CaseApplicantSchema),
-});
+}).meta({ className: 'Case' });
 
 export const CreateCaseRequestBodySchema = Joi.object({
   CaseTitle: Joi.string(),
@@ -81,6 +75,7 @@ export const CreateCaseRequestBodySchema = Joi.object({
   CaseAttributes: CaseAttributeSchema,
   CaseIdentifier: Joi.string().required(),
   FamilyMemberIds: Joi.array().items(Joi.string().uuid()),
+  WorkflowId: Joi.string().uuid().required(),
 }).meta({ className: 'CreateCaseRequestBody' });
 
 export const UpdateCaseRequestBodySchema = Joi.object({
@@ -92,11 +87,11 @@ export const UpdateCaseRequestBodySchema = Joi.object({
   AgencyCaseIdentifier: Joi.string(),
 }).meta({ className: 'UpdateCaseRequestBody' });
 
-export const UpdateCaseResponseSchema = CaseSchema;
+export const UpdateCaseResponseSchema = CaseSchema.meta({ className: 'UpdateCaseResponse' });
 
-export const CreateCaseResponseSchema = CaseSchema;
+export const CreateCaseResponseSchema = CaseSchema.meta({ className: 'CreateCaseResponse' });
 
-export const GetCaseResponseSchema = CaseSchema;
+export const GetCaseResponseSchema = CaseSchema.meta({ className: 'GetCaseResponse' });
 
 export const GetCasesResponseSchema = Joi.array().items(CaseSchema).meta({ className: 'getCaseResponse' });
 

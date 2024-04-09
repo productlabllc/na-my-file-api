@@ -7,18 +7,19 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { DeleteFamilyMemberRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import {
   DeleteFamilyMemberRequestSchema,
-  DeleteUsersFamilyResponseSchema,
-} from '../../lib/route-schemas/user-family.schema';
+  DeleteFamilymemberResponseSchema,
+} from '../../lib/route-schemas/family-member.schema';
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   requestBody: DeleteFamilyMemberRequestSchema,
-  responseBody: DeleteUsersFamilyResponseSchema,
+  responseBody: DeleteFamilymemberResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
@@ -28,7 +29,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
   const userId = user.id;
 
@@ -38,24 +39,33 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     // and check that family member being deleted actualy belongs to the user.
     const response = await db.$transaction(async tx => {
       const proResponse = await Promise.all(
-        requestBody.map(async item => {
+        requestBody.map(async familyMemberId => {
           await tx.userFamilyMember.softDelete({
             where: {
               UserId: userId,
-              id: item,
+              id: familyMemberId,
             },
           });
 
           // Delete the associated case applicants
           await tx.caseApplicant.softDeleteMany({
             where: {
-              UserFamilyMemberId: item,
+              UserFamilyMemberId: familyMemberId,
             },
           });
         }),
       );
       return proResponse;
     });
+
+    await logActivity({
+      activityType: 'DELETE_FAMILY_MEMBERS',
+      activityValue: `User (${user.Email} - ${user.IdpId}) deleted family members (${requestBody}).`,
+      userId: user.id,
+      timestamp: new Date(),
+      metadataJson: JSON.stringify({ request: input }),
+    });
+
     return response;
   } catch (error) {
     console.error('delete error: ', error);

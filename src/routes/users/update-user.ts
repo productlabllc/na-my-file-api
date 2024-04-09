@@ -7,13 +7,18 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import Joi = require('joi');
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { UpdateUserRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import { UpdateUserRequestSchema, UpdateUserResponseSchema } from '../../lib/route-schemas/user.schema';
+import tokenOwnsRequestedUser from '../../lib/middleware/token-owns-user.middleware';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
+  params: {
+    userId: Joi.string().uuid().required(),
+  },
   requestBody: UpdateUserRequestSchema,
   responseBody: UpdateUserResponseSchema,
 };
@@ -25,9 +30,10 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
-  const userId = user.id;
+  // const userId = user.id;
+  const userId = input.params.userId;
 
   // get valid fields in request body
   const updateKeys = Object.keys(requestBody) as Array<keyof typeof requestBody>;
@@ -81,7 +87,12 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 };
 
 const routeModule: RouteModule = {
-  routeChain: [jwtValidationMiddleware, schemaValidationMiddleware(routeSchema), handler],
+  routeChain: [
+    jwtValidationMiddleware,
+    schemaValidationMiddleware(routeSchema),
+    tokenOwnsRequestedUser('params.userId'),
+    handler,
+  ],
   routeSchema,
 };
 

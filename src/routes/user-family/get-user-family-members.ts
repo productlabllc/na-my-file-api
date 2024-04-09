@@ -6,22 +6,22 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
-import { UserFamilySchema } from '../../lib/route-schemas/user-family.schema';
-import * as Joi from 'joi';
+import { FamilyMemberSchema } from '../../lib/route-schemas/family-member.schema';
+import Joi = require('joi');
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
-  responseBody: Joi.array().items(UserFamilySchema),
+const routeSchema: RouteSchema = {
+  responseBody: Joi.array().items(FamilyMemberSchema),
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
   const db = getDB();
 
   const jwt: NycIdJwtType = input.routeData.jwt;
-
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
   const userId = user.id;
 
@@ -30,6 +30,14 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       UserId: userId,
       DeletedAt: null,
     },
+  });
+
+  await logActivity({
+    activityType: 'GET_ALL_USER_FAMILY_MEMBERS',
+    activityValue: `User (${user.Email} - ${user.IdpId}) retrieved all family member.`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input }),
   });
 
   return data;

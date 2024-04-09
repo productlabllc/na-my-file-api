@@ -7,9 +7,12 @@ import {
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
 import { getDB } from '../../lib/db';
-import * as Joi from 'joi';
+import Joi = require('joi');
+import { logActivity } from '../../lib/sqs';
+import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   params: {
     caseId: Joi.string().uuid(),
   },
@@ -18,6 +21,8 @@ export const routeSchema: RouteSchema = {
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
   const { caseId } = input.params as { caseId: string };
   const db = getDB();
+  const jwt: NycIdJwtType = input.routeData.jwt;
+  const user = await getUserByEmail(jwt?.email);
 
   // delete core case
   await db.case.softDelete({
@@ -40,6 +45,16 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   // delete all case criterion
   await db.caseCriterion.softDeleteMany({ where: { CaseId: caseId } });
+
+  await logActivity({
+    activityType: 'DELETE_CASE',
+    activityValue: `User (${user.Email} - ${user.IdpId}) deleted case (${caseId}).`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input }),
+    activityRelatedEntityId: caseId,
+    activityRelatedEntity: 'CASE',
+  });
 };
 
 const routeModule: RouteModule = {

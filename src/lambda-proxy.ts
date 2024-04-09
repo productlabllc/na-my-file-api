@@ -34,9 +34,9 @@ import rmUserFamilyMember_UpdateUserFamilyMember from './routes/user-family/upda
 import rmUserFamilyMember_DeleteUserFamilyMember from './routes/user-family/delete-user-family-member';
 
 // Case Applicants
-import rmCaseApplicants_AddCaseApplicants from './routes/case-applicants/add-case-applicants';
-import rmCaseApplicants_RemoveCaseApplicants from './routes/case-applicants/remove-case-applicants';
-import rmCaseApplicants_GetCaseApplicants from './routes/case-applicants/get-case-applicants';
+import rmCaseApplicants_AddCaseApplicants from './routes/case-family-members/add-case-family-members';
+import rmCaseApplicants_RemoveCaseApplicants from './routes/case-family-members/remove-case-family-members';
+import rmCaseApplicants_GetCaseApplicants from './routes/case-family-members/get-case-family-members';
 
 // Cases
 import rm_CreateCase from './routes/cases/create-case';
@@ -48,13 +48,19 @@ import rm_GetUserCases from './routes/cases/get-user-cases';
 // Case Files
 import rmCaseFiles_AddCaseFiles from './routes/case-files/add-case-files';
 import rmCaseFiles_RemoveCaseFiles from './routes/case-files/remove-case-files';
-import rm_GetCaseUserFiles from './routes/case-files/get-case-user-files';
+import rmCaseFiles_GetCaseUserFiles from './routes/case-files/get-case-user-files';
+import rmCaseFiles_GetCaseFilesStatus from './routes/case-files/get-case-file-listing';
+import rmCaseFiles_UpdateCaseFile from './routes/case-files/update-case-file';
 
 // Workflows
 import rmWorkFlows_GetWorkflows from './routes/workflows/get-workflows';
 
 // Languages
 import rmLanguages_GetLanguages from './routes/languages/get-languages';
+
+// NYCID
+// import rmNycid_Token from './routes/nycid/token';
+// import rmNycid_UserInfo from './routes/nycid/userinfo';
 
 // Messaging
 import rmMessaging_PostMessageToConnections from './routes/messaging/post-message-to-ws-connections';
@@ -74,7 +80,9 @@ const routeModules: { [key: string]: any } = {
   // CaseFiles
   'case-files/add-case-files': rmCaseFiles_AddCaseFiles,
   'case-files/remove-case-files': rmCaseFiles_RemoveCaseFiles,
-  'cases/get-case-user-files': rm_GetCaseUserFiles,
+  // 'case-files/get-case-user-files': rmCaseFiles_GetCaseUserFiles,
+  'case-files/get-case-file-listing': rmCaseFiles_GetCaseFilesStatus,
+  'case-files/update-case-file': rmCaseFiles_UpdateCaseFile,
 
   // Cases
   'cases/create-case': rm_CreateCase,
@@ -90,10 +98,10 @@ const routeModules: { [key: string]: any } = {
   'user-family/get-user-family-member': rmUserFamilyMember_GetUserFamilyMember,
   'user-family/get-user-family-members': rmUserFamilyMember_GetUserFamilyMembers,
 
-  // CaseApplicants
-  'case-applicants/add-case-applicants': rmCaseApplicants_AddCaseApplicants,
-  'case-applicants/remove-case-applicants': rmCaseApplicants_RemoveCaseApplicants,
-  'case-applicants/get-case-applicants': rmCaseApplicants_GetCaseApplicants,
+  // CaseApplicants (Family Members)
+  'case-family-members/add-case-family-members': rmCaseApplicants_AddCaseApplicants,
+  'case-family-members/remove-case-family-members': rmCaseApplicants_RemoveCaseApplicants,
+  'case-family-members/get-case-family-members': rmCaseApplicants_GetCaseApplicants,
 
   // User Files
   'user-files/get-user-files': rmUserFiles_GetUserFiles,
@@ -112,6 +120,10 @@ const routeModules: { [key: string]: any } = {
   'users/delete-user': rmUsers_DeleteUser,
   'users/get-user-activity': rmUsers_GetUserActivity,
   'users/create-user': rmUsers_CreateUser,
+
+  // NYCID
+  // 'nycid/token': rmNycid_Token,
+  // 'nycid/userinfo': rmNycid_UserInfo,
 
   // Messaging
   'messaging/post-message-to-ws-connections': rmMessaging_PostMessageToConnections,

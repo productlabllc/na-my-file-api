@@ -8,7 +8,7 @@ import {
 } from '@myfile/core-sdk';
 import userSchema from '../../lib/route-schemas/user.schema';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getDB } from '../../lib/db';
 
 export const routeSchema: RouteSchema = {
@@ -19,31 +19,25 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   try {
     const db = getDB();
     const jwt: NycIdJwtType = input.routeData.jwt;
-    const user = await getUserByIdpId(jwt?.GUID);
-
-    // The above user has very little information.  We need to get the full user.
-
-    // Get the full user
-    const fullUser = await db.user.findUnique({
-      where: {
-        id: user.id,
-      },
-      include: {
-        CaseCriteria: true,
-        UserFamilyMembers: true,
-        UserFiles: true,
-        UserWorkflows: {
-          include: {
-            Workflow: true,
-          },
+    let user = await getUserByEmail(jwt?.email);
+    if (!user) {
+      await db.user.create({
+        data: {
+          Email: jwt?.email,
+          FirstName: jwt?.given_name,
+          LastName: jwt?.family_name,
+          IdpId: jwt?.uid,
         },
-        CaseTeamAssignments: true,
-        CaseNotes: true,
-      },
-    });
-    return fullUser;
+      });
+      user = await getUserByEmail(jwt?.email);
+    }
+    return user;
   } catch (e) {
-    throw new CustomError('Error while getting the user', 500);
+    if (e instanceof CustomError) {
+      throw e;
+    } else {
+      throw new CustomError(JSON.stringify(e, null, 2), 500);
+    }
   }
 };
 

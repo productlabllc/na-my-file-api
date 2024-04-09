@@ -1,4 +1,5 @@
 import {
+  CustomError,
   MiddlewareArgumentsInputFunction,
   RouteArguments,
   RouteModule,
@@ -9,9 +10,12 @@ import {
 import { UpdateCaseRequestBodySchema, UpdateCaseResponseSchema } from '../../lib/route-schemas/case.schema';
 import { UpdateCaseRequestBody } from '../../lib/route-interfaces';
 import { getDB } from '../../lib/db';
-import * as Joi from 'joi';
+import Joi = require('joi');
+import { CAN_CHANGE_APPLICATION_STATUS, CASE_OWNER } from '../../lib/constants';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   params: {
     caseId: Joi.string().uuid(),
   },
@@ -25,6 +29,10 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   const requestBody: UpdateCaseRequestBody = input.body;
   const { caseId } = input.params;
 
+  const user = await getUserByEmail(input.routeData.jwt?.email);
+
+  const canChangeApplicationStatus = await user.isUserInGroup(CAN_CHANGE_APPLICATION_STATUS);
+
   const updateValues = { ...requestBody };
   const updateKeys = Object.keys(updateValues) as Array<keyof typeof updateValues>;
   updateKeys.forEach(key => {
@@ -33,6 +41,21 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     }
   });
 
+  const userHasCase = await db.caseTeamAssignment.findFirst({
+    where: {
+      CaseId: caseId,
+      CaseRole: CASE_OWNER,
+      UserId: user.id,
+    },
+  });
+
+  if (updateValues.Status && !canChangeApplicationStatus) {
+    throw new CustomError('User does not have permission to change application status', 403);
+  }
+
+  if (!updateValues.Status && !userHasCase) {
+    throw new CustomError('User does not have permission to update this case', 403);
+  }
   await db.case.update({
     where: {
       id: caseId,
@@ -51,6 +74,16 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       CaseApplicants: true,
       CaseTeamAssignments: true,
     },
+  });
+
+  await logActivity({
+    activityType: 'UPDATE_CASE',
+    activityValue: `User (${user.Email} - ${user.IdpId}) updated case details for case (${caseId}).`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input, updatedCase: overallCase }),
+    activityRelatedEntityId: caseId,
+    activityRelatedEntity: 'CASE',
   });
 
   return overallCase;

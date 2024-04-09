@@ -1,4 +1,4 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 
 import {
   CustomError,
@@ -14,11 +14,12 @@ import { getDB } from '../../lib/db';
 
 import { AddCaseFileRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
-import { CASE_OWNER } from '../../lib/constants';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { CAN_ADD_CASE_FILE, CASE_FILE_STATUS, CASE_OWNER } from '../../lib/constants';
 import { AddCaseFileRequestSchema } from '../../lib/route-schemas/case-file.schema';
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   params: {
     caseId: Joi.string().uuid(),
   },
@@ -31,27 +32,29 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
-
-  const userId = user?.id;
+  const user = await getUserByEmail(jwt?.email);
 
   const requestBody: AddCaseFileRequest = input.body;
 
-  // make sure case exists and user is owner
-  const thisCase = await db.case.findFirst({
+  // make sure case exists.
+  const existingCase = await db.case.findFirst({
     where: {
       AND: {
         id: caseId,
         DeletedAt: null,
-        CaseTeamAssignments: {
-          every: {
-            UserId: userId,
-            CaseRole: CASE_OWNER,
-          },
-        },
       },
     },
+    // select the user having this case as the user doing the update might not be the case owner.
     select: {
+      CaseTeamAssignments: {
+        where: {
+          CaseId: caseId,
+          CaseRole: CASE_OWNER,
+        },
+        select: {
+          UserId: true,
+        },
+      },
       CaseFiles: {
         where: {
           UserFileId: {
@@ -66,16 +69,24 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     },
   });
 
-  if (thisCase) {
+  if (existingCase) {
+    // make sure this use can add files to case
+    const canUserMakeUpdates = await user?.isUserInGroup(CAN_ADD_CASE_FILE);
+
+    if (!canUserMakeUpdates && existingCase.CaseTeamAssignments[0]?.UserId !== user?.id) {
+      throw new CustomError('User does not have permission to add files to case', 403);
+    }
+
     const caseFiles = requestBody.UserFileIds.map(ele => ({
       UserFileId: ele,
+      Status: CASE_FILE_STATUS.PENDING,
       CaseId: caseId,
     }));
 
-    if (thisCase.CaseFiles.length) {
+    if (existingCase.CaseFiles.length) {
       throw new CustomError(
         `Case files already exists: 
-        ${thisCase.CaseFiles.map(ele => ele.UserFile?.id).join(', ')}`,
+        ${existingCase.CaseFiles.map(ele => ele.UserFile?.id).join(', ')}`,
         409,
       );
     }
@@ -83,7 +94,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     // make sure user has these files
     const userFiles = await db.userFile.findMany({
       where: {
-        OwnerUserId: userId,
+        OwnerUserId: existingCase.CaseTeamAssignments[0].UserId,
         id: {
           in: requestBody.UserFileIds,
         },
@@ -92,11 +103,21 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     });
 
     if (userFiles.length !== requestBody.UserFileIds.length) {
-      throw new CustomError('User does not have these files', 400);
+      throw new CustomError('No file ids were provided.', 400);
     }
 
     const data = await db.caseFile.createMany({
       data: caseFiles,
+    });
+
+    await logActivity({
+      activityType: 'ADD_CASE_FILES',
+      activityValue: `User (${user?.Email} - ${user?.IdpId}) added case files (${caseFiles.map(cf => [cf.UserFileId, cf.Status])}) for case ${caseId}`,
+      userId: user?.id!,
+      timestamp: new Date(),
+      metadataJson: JSON.stringify({ request: input }),
+      activityRelatedEntityId: caseId,
+      activityRelatedEntity: 'CASE',
     });
 
     return data;

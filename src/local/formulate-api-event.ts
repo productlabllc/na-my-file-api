@@ -24,12 +24,15 @@ export default function formulateApiEvent({
 
   function mapPathToRoute(incomingPath: string) {
     const dynamicPathRegex = /{(\w+)}/g;
-    const params = {} as Record<string, string>;
     method = method.toUpperCase();
     path = path.replace(routesBaseUrlPath, '');
 
     for (let route of routesConfig.routes) {
-      if (dynamicPathRegex.test(route.path)) {
+      const test = route.path.match(dynamicPathRegex)
+
+      const params = {} as Record<string, string>;
+
+      if (test) {
         const routeParts = route.path.split('/');
         const pathParts = incomingPath.split('/');
 
@@ -64,7 +67,7 @@ export default function formulateApiEvent({
     ele => ele.path === pathMap.path && method.toLowerCase() === ele.method.toLowerCase(),
   );
 
-  console.warn('\n\n Route config is: ', routeConfig, '\n\n');
+  console.warn('\n\n Route config is: ', routeConfig, pathMap.params, '\n\n');
 
   if (!routeConfig) {
     console.warn('\n\n Route config is: ', config.routes, '\n\n');

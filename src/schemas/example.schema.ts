@@ -1,4 +1,4 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 
 export const ExampleSchema = {
   name: Joi.string().required().message('Name is required'),

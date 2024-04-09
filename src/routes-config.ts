@@ -6,12 +6,13 @@ import userRoutes from './routes/users/route-config.users';
 import messagingRoutes from './routes/messaging/route-config.messaging';
 import caseRoutes from './routes/cases/route-config.cases';
 import userFamilyRoutes from './routes/user-family/route-config.family-member';
-import caseApplicantsRoutes from './routes/case-applicants/route-config.case-applicants';
+import caseApplicantsRoutes from './routes/case-family-members/route-config.case-family-members';
 import workflowRoutes from './routes/workflows/route-config.workflow';
 import userWorkflowRoutes from './routes/user-workflows/route-config.user-flows';
 import userFileRoutes from './routes/user-files/route-config.user-files';
 import caseFileRoutes from './routes/case-files/route-config.case-files';
 import languageRoutes from './routes/languages/route-config.language';
+import nycidRoutes from './routes/nycid/route-config.nycid';
 
 export { routesBaseUrlPath } from './lib/utils';
 
@@ -43,6 +44,9 @@ export const config: RouteConfig = {
 
     // User Routes
     ...userRoutes,
+
+    // NYCID Routes
+    // ...nycidRoutes,
 
     /* Websocket Messaging */
     ...messagingRoutes,

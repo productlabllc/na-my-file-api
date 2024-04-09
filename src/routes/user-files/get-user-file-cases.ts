@@ -1,4 +1,4 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 
 import {
   MiddlewareArgumentsInputFunction,
@@ -11,21 +11,23 @@ import {
 
 import { getDB } from '../../lib/db';
 import { GetUserFileCasesResponseSchema } from '../../lib/route-schemas/case.schema';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   params: {
     fileId: Joi.string().uuid(),
+    userId: Joi.string().uuid(),
   },
   responseBody: GetUserFileCasesResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
-  const { caseId } = input.params as { caseId: string };
+  const { fileId } = input.params as { fileId: string };
   const db = getDB();
 
   const overallCase = await db.caseFile.findMany({
     where: {
-      CaseId: caseId,
+      UserFileId: fileId,
       DeletedAt: null,
     },
     include: {

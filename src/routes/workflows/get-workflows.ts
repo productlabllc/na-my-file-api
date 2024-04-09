@@ -6,11 +6,11 @@ import {
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
 import { getDB } from '../../lib/db';
-import * as Joi from 'joi';
+import joi = require('joi');
 import { WorkFlowSchema } from '../../lib/route-schemas/workflow.schema';
 
 export const routeSchema: RouteSchema = {
-  responseBody: Joi.array().items(WorkFlowSchema),
+  responseBody: joi.array().items(WorkFlowSchema),
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {

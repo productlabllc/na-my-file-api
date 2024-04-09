@@ -1,10 +1,13 @@
-import * as Joi from 'joi';
-import { CaseFileSchema } from './case.schema';
+import joi = require('joi');
 
-export const AddCaseFileRequestSchema = Joi.object({
-  UserFileIds: Joi.array().items(Joi.string().uuid()).required(),
+export const AddCaseFileRequestSchema = joi.object().keys({
+  UserFileIds: joi.array().items(joi.string().uuid()).required(),
 }).meta({ className: 'AddCaseFileRequest' });
 
-export const DeleteCaseFileRequestSchema = Joi.object({
-  UserFileIds: Joi.array().items(Joi.string().uuid().required()).required(),
+export const DeleteCaseFileRequestSchema = joi.object({
+  UserFileIds: joi.array().items(joi.string().uuid().required()).required(),
 }).meta({ className: 'DeleteCaseFileRequest' });
+
+export const UpdateCaseFileRequestSchema = joi.object({
+  Status: joi.string().required(),
+}).meta({ className: 'UpdateCaseFileRequest' });

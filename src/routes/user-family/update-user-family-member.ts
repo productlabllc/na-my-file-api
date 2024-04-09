@@ -7,32 +7,33 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
-import { UpdateUserFamilyRequest } from '../../lib/route-interfaces';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { UpdateFamilyMemberRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import {
-  UpdateUserFamilyRequestSchema,
-  UpdateUserFamilyResponseSchema,
-} from '../../lib/route-schemas/user-family.schema';
+  UpdateFamilyMemberRequestSchema,
+  UpdateFamilyMemberResponseSchema,
+} from '../../lib/route-schemas/family-member.schema';
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
-  requestBody: UpdateUserFamilyRequestSchema,
-  responseBody: UpdateUserFamilyResponseSchema,
+const routeSchema: RouteSchema = {
+  requestBody: UpdateFamilyMemberRequestSchema,
+  responseBody: UpdateFamilyMemberResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
   const db = getDB();
 
-  const requestBody: UpdateUserFamilyRequest = input.body;
+  const requestBody: UpdateFamilyMemberRequest = input.body;
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
   const userId = user.id;
 
-  const dataUpdateKeys = Object.keys(requestBody) as Array<keyof UpdateUserFamilyRequest>;
+  const dataUpdateKeys = Object.keys(requestBody) as Array<keyof UpdateFamilyMemberRequest>;
   dataUpdateKeys.forEach(key => {
     if (requestBody[key] === undefined || requestBody[key] === null) {
       delete requestBody[key];
@@ -60,6 +61,16 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       DOB: true,
       LastModifiedAt: true,
     },
+  });
+
+  await logActivity({
+    activityType: 'UPDATE_FAMILY_MEMBER',
+    activityValue: `User (${user.Email} - ${user.IdpId}) updated family member (${requestBody}).`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input }),
+    activityRelatedEntityId: requestBody.id,
+    activityRelatedEntity: 'FAMILY_MEMBER',
   });
 
   return updatedUser;

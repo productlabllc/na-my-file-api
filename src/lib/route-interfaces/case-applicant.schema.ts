@@ -3,7 +3,14 @@
  * Do not modify this file manually
  */
 
-export type AddCaseApplicantsRequest = {
+export interface AddCaseApplicantsResponse {
+  Case?: object;
+  CaseId?: string;
+  UserFamilyMember?: object;
+  UserFamilyMemberId?: string;
+}
+
+export type AddCaseFamilyMembersRequest = {
   UserFamilyMemberId: string;
 }[];
 
@@ -14,15 +21,8 @@ export interface CaseApplicant {
   UserFamilyMemberId?: string;
 }
 
-export interface CaseApplicant {
-  Case?: object;
-  CaseId?: string;
-  UserFamilyMember?: object;
-  UserFamilyMemberId?: string;
-}
-
 export interface DeleteCaseApplicantResponse {}
 
-export type DeleteCaseApplicantsRequest = {
+export type DeleteCaseFamilyMembersRequest = {
   UserFamilyMemberId: string;
 }[];

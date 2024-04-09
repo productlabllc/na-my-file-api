@@ -35,6 +35,28 @@ const getNewClient = () => {
 
   return prisma.$extends({
     name: 'softDelete',
+    result: {
+      user: {
+        isUserInGroup: {
+          needs: { id: true },
+          compute(user) {
+            return async (group: Array<string>) => {
+              const groupRoles = await prisma.stakeholderGroupRole.findMany({
+                where: {
+                  User_StakeholderGroupRole: {
+                    some: {
+                      UserId: user.id,
+                    },
+                  },
+                },
+              });
+
+              return groupRoles.some(ele => group.includes(ele.Name!));
+            };
+          },
+        },
+      },
+    },
     model: {
       uploadedMediaAssetVersion: {
         async softDelete({
@@ -305,7 +327,7 @@ const getNewClient = () => {
 let db: ReturnType<typeof getNewClient>;
 const { DB_CREDS, NODE_ENV = 'dev' } = process.env;
 
-export const getConnectionString = () => {
+const getConnectionString = () => {
   if (!DB_CREDS) {
     throw new Error('DB_CREDS environment variable must be set.');
   }
@@ -334,8 +356,6 @@ export const getDB = () => {
 //   prisma.$extends({
 //     result: {
 //       dailyClaims: {
-
-// postgresql://postgres:LiAaS4cr4Ltp__0e.VpnaryMW0gNTy@my-file-core-infra-my-file-db-dev.ca3qgwuwxsft.us-east-1.rds.amazonaws.com:5432/postgres
 
 //       },
 //       user: {

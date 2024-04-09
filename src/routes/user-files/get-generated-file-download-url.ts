@@ -3,13 +3,16 @@ import {
   MiddlewareArgumentsInputFunction,
   RouteArguments,
   RouteSchema,
+  jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import * as joi from 'joi';
+import joi = require('joi');
 import { getDB } from '../../lib/db';
 import { GetUserFileDownloadUrlResponseSchema } from '../../lib/route-schemas/user-file.schema';
 import { getPresignedDownloadUrl } from '../../lib/s3';
 import { EnvironmentVariablesEnum } from '../../lib/environment';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { CAN_DOWNLOAD_USER_FILE } from '../../lib/constants';
 
 export const routeSchema: RouteSchema = {
   query: {
@@ -23,7 +26,17 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   try {
     const db = getDB();
 
+    const user = await getUserByEmail(input.routeData.jwt?.email);
+
+    const canDownload = await user.isUserInGroup(CAN_DOWNLOAD_USER_FILE);
+
     const { generatedFileId, userId } = input.query as { generatedFileId: string; userId: string };
+
+    const userHasFile = userId === user.id;
+
+    if (!canDownload && !userHasFile) {
+      throw new CustomError('User does not have permission to download this file', 403);
+    }
 
     const thisGeneratedFile = await db.generatedFile.findFirst({
       where: {
@@ -52,7 +65,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 };
 
 const routeModule = {
-  routeChain: [schemaValidationMiddleware(routeSchema), handler],
+  routeChain: [jwtValidationMiddleware, schemaValidationMiddleware(routeSchema), handler],
   routeSchema,
 };
 

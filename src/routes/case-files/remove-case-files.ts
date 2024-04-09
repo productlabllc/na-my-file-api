@@ -1,6 +1,7 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 
 import {
+  CustomError,
   MiddlewareArgumentsInputFunction,
   RouteArguments,
   RouteModule,
@@ -11,12 +12,13 @@ import {
 
 import { getDB } from '../../lib/db';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
-import { CASE_OWNER } from '../../lib/constants';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { DeleteCaseFileRequestSchema } from '../../lib/route-schemas/case-file.schema';
 import { DeleteCaseFileRequest } from '../../lib/route-interfaces';
+import { CAN_ADD_CASE_FILE, CASE_OWNER } from '../../lib/constants';
+import { logActivity } from '../../lib/sqs';
 
-export const routeSchema: RouteSchema = {
+const routeSchema: RouteSchema = {
   params: {
     caseId: Joi.string().uuid(),
   },
@@ -29,9 +31,25 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const jwt: NycIdJwtType = input.routeData.jwt;
 
-  const user = await getUserByIdpId(jwt?.GUID);
+  const user = await getUserByEmail(jwt?.email);
 
-  const userId = user?.id;
+  const existingCase = await db.case.findFirst({
+    where: {
+      id: caseId,
+    },
+    select: {
+      CaseTeamAssignments: {
+        where: {
+          CaseRole: CASE_OWNER,
+        },
+      },
+    },
+  });
+
+  // make sure this use can remove these files
+  if (!(await user.isUserInGroup(CAN_ADD_CASE_FILE)) && existingCase?.CaseTeamAssignments[0]?.UserId !== user.id) {
+    throw new CustomError('User does not have permission to add files to case', 403);
+  }
 
   const requestBody: DeleteCaseFileRequest = input.body;
 
@@ -39,19 +57,21 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     where: {
       AND: {
         CaseId: caseId,
-        Case: {
-          CaseTeamAssignments: {
-            every: {
-              UserId: userId,
-              CaseRole: CASE_OWNER,
-            },
-          },
-        },
         UserFileId: {
           in: requestBody.UserFileIds.map(ele => ele),
         },
       },
     },
+  });
+
+  await logActivity({
+    activityType: 'REMOVE_CASE_FILES',
+    activityValue: `User (${user.Email} - ${user.IdpId}) removed case files (${requestBody.UserFileIds}) for case ${caseId}`,
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input }),
+    activityRelatedEntityId: caseId,
+    activityRelatedEntity: 'CASE',
   });
 
   return data;

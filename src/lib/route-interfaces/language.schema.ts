@@ -3,7 +3,7 @@
  * Do not modify this file manually
  */
 
-export interface LanguageSchema {
+export interface Language {
   Code: string;
   CreatedAt: Date;
   Name: string;

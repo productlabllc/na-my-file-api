@@ -6,8 +6,8 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
-import * as Joi from 'joi';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import Joi = require('joi');
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
 import { GetUserActivityResponseSchema } from '../../lib/route-schemas/user.schema';
 import { GetUserActivityQuery } from '../../lib/route-interfaces';
@@ -29,7 +29,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   try {
     const jwt: NycIdJwtType = input.routeData.jwt;
 
-    const user = await getUserByIdpId(jwt?.GUID);
+    const user = await getUserByEmail(jwt?.email);
     const query: GetUserActivityQuery = input.query;
 
     const db = getDB();

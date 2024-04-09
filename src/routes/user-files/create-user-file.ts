@@ -9,7 +9,7 @@ import {
 import { CreateUserFileRequestSchema } from '../../lib/route-schemas/user-file.schema';
 import { CreateUserFileRequest } from '../../lib/route-interfaces';
 import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
-import { getUserByIdpId } from '../../lib/data/get-user-by-idp-id';
+import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getDB } from '../../lib/db';
 import { getPresignedUploadUrl } from '../../lib/s3';
 import { EnvironmentVariablesEnum } from '../../lib/environment';
@@ -27,7 +27,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     const db = getDB();
     const jwt: NycIdJwtType = input.routeData.jwt;
 
-    const user = await getUserByIdpId(jwt?.GUID);
+    const user = await getUserByEmail(jwt?.email);
 
     const userId = user.id;
 

@@ -1,14 +1,23 @@
 import { CustomError } from '@myfile/core-sdk';
 import { getDB } from '../db';
 
-export const getUserByIdpId = async (idpId: string) => {
+export const getUserByEmail = async (email: string) => {
   const db = getDB();
   const user = await db.user.findFirst({
     where: {
-      IdpId: idpId,
-      DeletedAt: null,
+      Email: email,
     },
     include: {
+      CaseCriteria: true,
+      UserFamilyMembers: true,
+      UserFiles: true,
+      UserWorkflows: {
+        include: {
+          Workflow: true,
+        },
+      },
+      CaseTeamAssignments: true,
+      CaseNotes: true,
       StakeholderGroupRoles: {
         include: {
           StakeholderGroupRole: true,
@@ -16,9 +25,5 @@ export const getUserByIdpId = async (idpId: string) => {
       },
     },
   });
-
-  if (!user) {
-    throw new CustomError('User not found', 400);
-  }
   return user;
 };

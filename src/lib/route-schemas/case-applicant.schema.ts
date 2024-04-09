@@ -1,4 +1,4 @@
-import * as Joi from 'joi';
+import Joi = require('joi');
 
 export const CaseApplicantSchema = Joi.object({
   CaseId: Joi.string().uuid(),
@@ -7,14 +7,14 @@ export const CaseApplicantSchema = Joi.object({
   Case: Joi.object(),
 }).meta({ className: 'CaseApplicant' });
 
-export const AddCaseApplicantsRequestSchema = Joi.array()
+export const AddCaseFamilyMembersRequestSchema = Joi.array()
   .items(Joi.object({ UserFamilyMemberId: Joi.string().uuid().required() }))
-  .meta({ className: 'AddCaseApplicantsRequest' });
+  .meta({ className: 'AddCaseFamilyMembersRequest' });
 
-export const AddCaseApplicantsResponseSchema = CaseApplicantSchema;
+export const AddCaseApplicantsResponseSchema = CaseApplicantSchema.meta({ className: 'AddCaseApplicantsResponse' });
 
-export const DeleteCaseApplicantsRequestSchema = Joi.array()
+export const DeleteCaseFamilyMembersRequestSchema = Joi.array()
   .items(Joi.object({ UserFamilyMemberId: Joi.string().uuid().required() }))
-  .meta({ className: 'DeleteCaseApplicantsRequest' });
+  .meta({ className: 'DeleteCaseFamilyMembersRequest' });
 
-export const DeleteCaseResponseSchema = Joi.object({}).meta({ className: 'DeleteCaseApplicantResponse' });
+export const DeleteCaseApplicantResponseSchema = Joi.object({}).meta({ className: 'DeleteCaseApplicantResponse' });

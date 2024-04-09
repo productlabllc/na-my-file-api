@@ -5,7 +5,7 @@ import {
   schemaValidationMiddleware,
 } from '@myfile/core-sdk';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import * as joi from 'joi';
+import joi = require('joi');
 import postMessageToConnection from '../../lib/post-message-to-connection';
 
 export const routeSchema: RouteSchema = {
