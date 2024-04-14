@@ -1,7 +1,7 @@
 {
-  "name": "my-file-nyc-api",
+  "name": "my-file-api",
   "version": "0.1.11",
-  "description": "My File NYC Platform API",
+  "description": "My File Platform API",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc ./src/lambda-proxy.ts --outDir ./dist",
