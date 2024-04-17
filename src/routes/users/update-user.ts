@@ -16,9 +16,6 @@ import { UpdateUserRequestSchema, UpdateUserResponseSchema } from '../../lib/rou
 import tokenOwnsRequestedUser from '../../lib/middleware/token-owns-user.middleware';
 
 const routeSchema: RouteSchema = {
-  params: {
-    userId: Joi.string().uuid().required(),
-  },
   requestBody: UpdateUserRequestSchema,
   responseBody: UpdateUserResponseSchema,
 };
@@ -32,9 +29,6 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const user = await getUserByEmail(jwt?.email);
 
-  // const userId = user.id;
-  const userId = input.params.userId;
-
   // get valid fields in request body
   const updateKeys = Object.keys(requestBody) as Array<keyof typeof requestBody>;
   const updateFields = updateKeys.reduce((acc, key) => {
@@ -44,27 +38,9 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     return acc;
   }, requestBody);
 
-  // make sure language exists
-  if (updateFields.LanguageId) {
-    const language = await db.language.findUnique({
-      where: {
-        id: updateFields.LanguageId,
-      },
-    });
-
-    if (!language) {
-      throw new CustomError(
-        JSON.stringify({
-          message: `Language ${updateFields.LanguageId} not found`,
-        }),
-        400,
-      );
-    }
-  }
-
   const updatedUser = await db.user.update({
     where: {
-      id: userId,
+      id: user?.id,
     },
     data: {
       ...updateFields,
@@ -75,7 +51,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       LastName: true,
       Email: true,
       DOB: true,
-      LanguageId: true,
+      LanguageIsoCode: true,
       TOSAcceptedAt: true,
       PPAcceptedAt: true,
       CreatedAt: true,
@@ -90,7 +66,6 @@ const routeModule: RouteModule = {
   routeChain: [
     jwtValidationMiddleware,
     schemaValidationMiddleware(routeSchema),
-    tokenOwnsRequestedUser('params.userId'),
     handler,
   ],
   routeSchema,

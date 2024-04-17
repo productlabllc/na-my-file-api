@@ -21,7 +21,7 @@ export const CreateUserRequestSchema = joi
     LastName: joi.string().required(),
     Email: joi.string().email().required(),
     DOB: joi.date().required(),
-    LanguageId: joi.string().uuid().required(),
+    LanguageIsoCode: joi.string(),
     Workflows: joi.array().items(joi.string().uuid()),
   })
   .meta({ className: 'CreateUserRequest' });
@@ -33,9 +33,10 @@ export const UpdateUserRequestSchema = joi
     FirstName: joi.string(),
     LastName: joi.string(),
     Email: joi.string().email(),
-    DOB: joi.date(),
-    LanguageId: joi.string().uuid(),
+    DOB: joi.date().allow(null),
+    LanguageIsoCode: joi.string(),
     TOSAcceptedAt: joi.date(),
+    TOSAccepted: joi.boolean(),
     PPAcceptedAt: joi.date(),
   })
   .meta({ className: 'UpdateUserRequest' });

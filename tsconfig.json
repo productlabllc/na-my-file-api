@@ -37,5 +37,5 @@
   ],
   "include": [
     "src/**/*"
-  ]
+, "local/formulate-api-event.ts", "local/main.ts"  ]
 }
