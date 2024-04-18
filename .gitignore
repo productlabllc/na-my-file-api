@@ -4,6 +4,7 @@
 *.d.ts
 node_modules
 .DS_Store
+.npmrc
 
 cdk-exports.json
 cdk.context.json
@@ -25,4 +26,10 @@ dist
 
 # ignore json files
 route-modules-oas.json
+custom-swagger.json
 session.json
+
+# explicit allow
+!generate-oas-full-spec.js
+!swagger-baseline.js
+!build-npmrc.js

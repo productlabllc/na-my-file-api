@@ -153,15 +153,15 @@ model User {
   CreatedAt                                              DateTime?                   @default(now()) @db.Timestamptz(6)
   LastModifiedAt                                         DateTime?                   @updatedAt @db.Timestamptz(6)
   DeletedAt                                              DateTime?                   @db.Timestamptz(6)
-  LanguageId                                             String?                     @db.Uuid
+  LanguageIsoCode                                        String?
   DOB                                                    DateTime?                   @db.Timestamptz(6)
   PPAcceptedAt                                           DateTime?                   @db.Timestamptz(6)
   TOSAcceptedAt                                          DateTime?                   @db.Timestamptz(6)
+  TOSAccepted                                            Boolean?
   CaseCriteria                                           CaseCriterion[]             @relation("FK_User_to_CaseCriterion")
   CaseNotes                                              CaseNote[]                  @relation("FK_User_to_CaseNote")
   CaseTeamAssignments                                    CaseTeamAssignment[]        @relation("FK_User_to_CaseTeamAssignment")
   PlatformActivityLogs                                   PlatformActivityLog[]       @relation("FK_User_to_PlatformActivityLog")
-  Language                                               Language?                   @relation("FK_User_to_Language", fields: [LanguageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   UserAttribute_UserAttribute_CreatedByUserIdToUser      UserAttribute[]             @relation("UserAttribute_CreatedByUserIdToUser")
   UserAttribute_UserAttribute_LastModifiedByUserIdToUser UserAttribute[]             @relation("UserAttribute_LastModifiedByUserIdToUser")
   UserFamilyMembers                                      UserFamilyMember[]          @relation("FK_User_to_UserFamilyMember")
@@ -301,5 +301,4 @@ model Language {
   CreatedAt      DateTime? @default(now()) @db.Timestamptz(6)
   LastModifiedAt DateTime? @updatedAt @db.Timestamptz(6)
   DeletedAt      DateTime? @db.Timestamptz(6)
-  Users          User[]    @relation("FK_User_to_Language")
 }

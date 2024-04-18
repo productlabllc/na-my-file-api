@@ -22,7 +22,7 @@ export interface CreateUserRequest {
   DOB: Date;
   Email: string;
   FirstName: string;
-  LanguageId: string;
+  LanguageIsoCode?: string;
   LastName: string;
   Workflows?: string[];
 }
@@ -71,9 +71,10 @@ export interface UpdateUserRequest {
   DOB?: Date;
   Email?: string;
   FirstName?: string;
-  LanguageId?: string;
+  LanguageIsoCode?: string;
   LastName?: string;
   PPAcceptedAt?: Date;
+  TOSAccepted?: boolean;
   TOSAcceptedAt?: Date;
 }
 

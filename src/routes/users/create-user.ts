@@ -34,21 +34,6 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   }
 
   const newUser = await db.$transaction(async tx => {
-    // Make sure language exists
-    const language = await tx.language.findUnique({
-      where: {
-        id: requestBody.LanguageId,
-      },
-    });
-
-    if (!language) {
-      throw new CustomError(
-        JSON.stringify({
-          message: `Language ${requestBody.LanguageId} not found`,
-        }),
-        400,
-      );
-    }
 
     const user = await tx.user.create({
       data: {
@@ -56,7 +41,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
         LastName: requestBody.LastName,
         Email: requestBody.Email,
         DOB: requestBody.DOB,
-        LanguageId: requestBody.LanguageId,
+        LanguageIsoCode: requestBody.LanguageIsoCode,
         IdpId: jwt?.GUID,
       },
       select: {
