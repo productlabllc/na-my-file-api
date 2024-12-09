@@ -8,28 +8,27 @@ import {
 import { AppMetadata } from '../config';
 
 export interface ExtendedStackProps extends StackProps {
-  deploymentTarget: string,
-  awsRegion: string,
-  appMetadata: AppMetadata,
+  deploymentTarget: string;
+  awsRegion: string;
+  appMetadata: AppMetadata;
 
-  resourceSuffix: string,
-  fqdn: string,
-  orgNameAbbv: string,
-  wildcardCert?: acm.ICertificate,
-  existingWildcardCertArn?: string,
-  vpc?: ec2.IVpc,
-  existingVpcId?: string,
-  vpcAvailabilityZones?: Array<string>,
-  hostedZone?: r53.IHostedZone,
-  existingHostedZoneId?: string,
-  existingHostedZoneName?: string,
-  createNewVpc: boolean,
-  createNewHostedZone: boolean,
-  existingVpcSubnets?: string,
-  existingRouteTables?: string,
-  existingDbSecurityGroupIds?: string,
+  resourceSuffix: string;
+  fqdn: string;
+  orgNameAbbv: string;
+  wildcardCert?: acm.ICertificate;
+  existingWildcardCertArn?: string;
+  vpc?: ec2.IVpc;
+  existingVpcId?: string;
+  vpcAvailabilityZones?: Array<string>;
+  hostedZone?: r53.IHostedZone;
+  existingHostedZoneId?: string;
+  existingHostedZoneName?: string;
+  createNewVpc: boolean;
+  createNewHostedZone: boolean;
+  existingVpcSubnets?: string;
+  existingRouteTables?: string;
+  existingDbSecurityGroupIds?: string;
   getFormattedResourceName: (name: string) => string;
-};
+}
 
-export interface ExtendedNestedStackProps extends NestedStackProps, ExtendedStackProps {
-};
+export interface ExtendedNestedStackProps extends NestedStackProps, ExtendedStackProps {}

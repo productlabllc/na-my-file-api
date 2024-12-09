@@ -4,7 +4,7 @@ import {
   RouteArguments,
   RouteSchema,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { getDB } from '../../lib/db';
 import joi = require('joi');
 import { WorkFlowSchema } from '../../lib/route-schemas/workflow.schema';

@@ -5,7 +5,7 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import joi = require('joi');
 import { getDB } from '../../lib/db';
 import { GetUserFileDownloadUrlResponseSchema } from '../../lib/route-schemas/user-file.schema';

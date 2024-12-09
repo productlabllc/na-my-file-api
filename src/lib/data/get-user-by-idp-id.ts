@@ -1,4 +1,4 @@
-import { CustomError } from '@myfile/core-sdk';
+import { CustomError } from 'aws-lambda-api-tools';
 import { getDB } from '../db';
 
 export const getUserByEmail = async (email: string) => {

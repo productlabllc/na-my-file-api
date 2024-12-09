@@ -8,7 +8,7 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 
 import { getDB } from '../../lib/db';
 import { GetCaseResponseSchema } from '../../lib/route-schemas/case.schema';

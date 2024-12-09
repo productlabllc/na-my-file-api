@@ -5,12 +5,12 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { getDB } from '../../lib/db';
 import { FamilyMemberSchema } from '../../lib/route-schemas/family-member.schema';
 import Joi = require('joi');
 import { logActivity } from '../../lib/sqs';
-import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 
 const routeSchema: RouteSchema = {
@@ -24,7 +24,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   const db = getDB();
 
   const id = input.params.id as string;
-  const jwt: NycIdJwtType = input.routeData.jwt;
+  const jwt: CognitoJwtType = input.routeData.jwt;
   const user = await getUserByEmail(jwt?.email);
 
   const data = await db.userFamilyMember.findFirst({

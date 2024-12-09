@@ -8,11 +8,12 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { InterfaceVpcEndpointAwsService } from 'aws-cdk-lib/aws-ec2';
 
-interface ActivityLogConstructProps extends ExtendedStackProps {
+interface PostSendEmailCleanupHandlerConstructProps extends ExtendedStackProps {
   // Add properties here
   name: string;
   ssmVpcId: string;
@@ -23,43 +24,50 @@ interface ActivityLogConstructProps extends ExtendedStackProps {
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
-  sqsActivityLogQueue: sqs.IQueue;
+  sqsPostSendEmailCleanupQueue: sqs.IQueue;
 }
-export class LambdaActivityLogConstruct extends Construct {
-  public readonly activityLogHandler: lambdaNodeJS.NodejsFunction;
+export class LambdaPostSendEmailCleanupHandlerConstruct extends Construct {
+  public readonly lambdaHandler: lambdaNodeJS.NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: ActivityLogConstructProps) {
+  constructor(scope: Construct, id: string, props: PostSendEmailCleanupHandlerConstructProps) {
     super(scope, id);
 
-    const { deploymentTarget, sqsActivityLogQueue } = props;
+    const { deploymentTarget, sqsPostSendEmailCleanupQueue: sqsActivityLogQueue, getFormattedResourceName } = props;
 
     const vpc = ec2.Vpc.fromLookup(this, 'vpc', {
       vpcId: props.ssmVpcId,
     });
+    // const sesVpcEndpointSecurityGroup = new ec2.SecurityGroup(this, getFormattedResourceName('sg-ses-vpc-endpoint'), {
+    //     description: `SES VPC endpoint security group`,
+    //     vpc,
+    //   }
+    // );
+    // vpc.addInterfaceEndpoint(`my-ses-access`, {
+    //   service: new InterfaceVpcEndpointAwsService('email-smtp'),
+    //   securityGroups: [sesVpcEndpointSecurityGroup],
+    // });
 
-    this.activityLogHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
+    this.lambdaHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
       runtime: Runtime.NODEJS_18_X,
       vpc,
       memorySize: props.lambdaMemorySizeInMb,
       timeout: Duration.seconds(props.lambdaTimeoutInSeconds),
-      loggingFormat: LoggingFormat.JSON,
-      logRetention: RetentionDays.ONE_DAY,
+      logRetention: RetentionDays.ONE_WEEK,
 
-      // vpc,
       environment: {
         ...props.envVars,
         TIMESTAMP: Date.now().toString(),
-        SQS_ACTIVITY_LOG_QUEUE_URL: props.sqsActivityLogQueue.queueUrl,
-        SQS_ACTIVITY_LOG_QUEUE_NAME: props.sqsActivityLogQueue.queueName,
+        POST_SEND_EMAIL_CLEANUP_QUEUE_URL: props.sqsPostSendEmailCleanupQueue.queueUrl,
+        POST_SEND_EMAIL_CLEANUP_QUEUE_NAME: props.sqsPostSendEmailCleanupQueue.queueName,
       },
-      events: [new SqsEventSource(sqsActivityLogQueue)],
+      events: [new SqsEventSource(props.sqsPostSendEmailCleanupQueue)],
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
-            return [];
+            return [`cp -R ${inputDir}/src/lambdas/email-handler/templates ${outputDir}/templates`];
           },
           beforeInstall(inputDir: string, outputDir: string) {
             return [`cp -R ./prisma ${outputDir}/`];
@@ -76,10 +84,12 @@ export class LambdaActivityLogConstruct extends Construct {
       },
     });
 
+    // this.lambdaHandler.connections.allowTo(sesVpcEndpointSecurityGroup, ec2.Port.allTcp());
+
     if (props.iamPolicy) {
-      this.activityLogHandler.addToRolePolicy(props.iamPolicy);
+      this.lambdaHandler.addToRolePolicy(props.iamPolicy);
     }
 
-    sqsActivityLogQueue.grantConsumeMessages(this.activityLogHandler);
+    props.sqsPostSendEmailCleanupQueue.grantConsumeMessages(this.lambdaHandler);
   }
 }

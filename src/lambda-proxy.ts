@@ -1,4 +1,4 @@
-import { lambdaRouteProxyEntryHandler, lambdaRouteProxyPathNotFound } from '@myfile/core-sdk';
+import { lambdaRouteProxyEntryHandler, lambdaRouteProxyPathNotFound } from 'aws-lambda-api-tools';
 import { config } from './routes-config';
 
 // Import route modules

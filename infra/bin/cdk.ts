@@ -46,7 +46,7 @@ const main = () => {
     awsRegion,
     deploymentTarget,
   };
-  
+
   const mainStack = new CdkStack(app, appTags.StackName, {
     env: {
       account: (process.env.AWS_ACCOUNT as string).replace(/\"/g, ''),

@@ -4,7 +4,7 @@ import {
   RouteArguments,
   RouteSchema,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { UpdateGeneratedFileRequest } from '../../lib/route-interfaces';
 import { getDB } from '../../lib/db';
 

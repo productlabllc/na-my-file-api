@@ -5,10 +5,10 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { getDB } from '../../lib/db';
 import { GetUserFilesResponseSchema } from '../../lib/route-schemas/user-file.schema';
-import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { CAN_DOWNLOAD_USER_FILE, USER_FILE_STATUS } from '../../lib/constants';
 import Joi = require('joi');
@@ -24,7 +24,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   try {
     const db = getDB();
 
-    const jwt: NycIdJwtType = input.routeData.jwt;
+    const jwt: CognitoJwtType = input.routeData.jwt;
 
     const user = await getUserByEmail(jwt?.email);
 

@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { routesBaseUrlPath, routesSourceBaseDirectory } from '../../lib/utils';
-import { ConfigRouteEntry } from '@myfile/core-sdk';
+import { ConfigRouteEntry } from 'aws-lambda-api-tools';
 
 export default [
   /* User Routes */

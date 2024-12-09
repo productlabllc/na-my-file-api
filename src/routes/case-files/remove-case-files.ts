@@ -8,10 +8,10 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 
 import { getDB } from '../../lib/db';
-import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { DeleteCaseFileRequestSchema } from '../../lib/route-schemas/case-file.schema';
 import { DeleteCaseFileRequest } from '../../lib/route-interfaces';
@@ -29,7 +29,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   const { caseId } = input.params as { caseId: string };
   const db = getDB();
 
-  const jwt: NycIdJwtType = input.routeData.jwt;
+  const jwt: CognitoJwtType = input.routeData.jwt;
 
   const user = await getUserByEmail(jwt?.email);
 

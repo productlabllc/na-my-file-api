@@ -8,7 +8,7 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import axios from 'axios';
 import { getAxiosProxyConfiguration, setupAxiosLogging } from '../../lib/utils';
 

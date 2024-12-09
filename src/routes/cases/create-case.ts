@@ -6,11 +6,11 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { CreateCaseRequestBodySchema, CreateCaseResponseSchema } from '../../lib/route-schemas/case.schema';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { CreateCaseRequestBody } from '../../lib/route-interfaces';
-import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import { CASE_CRITERION_STATUS, CASE_OWNER } from '../../lib/constants';
 import { CaseCriterion } from '@prisma/client';
@@ -26,7 +26,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const requestBody: CreateCaseRequestBody = input.body;
 
-  const jwt: NycIdJwtType = input.routeData.jwt;
+  const jwt: CognitoJwtType = input.routeData.jwt;
 
   const user = await getUserByEmail(jwt?.email);
 

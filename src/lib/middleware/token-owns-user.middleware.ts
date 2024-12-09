@@ -1,17 +1,18 @@
-import { CustomError, RouteArguments } from '@myfile/core-sdk';
+import { CustomError, RouteArguments } from 'aws-lambda-api-tools';
 import { getUserByEmail } from '../data/get-user-by-idp-id';
 import _ = require('lodash');
-import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { CognitoJwtType } from '../types-and-interfaces';
+
 
 export const tokenOwnsRequestedUser =
-  (userIdPath: string) =>
+  (cognitoIdPath: string) =>
   async (incomingData: RouteArguments): Promise<RouteArguments> => {
     const { routeData = {} } = incomingData;
-    const userId = _.get(incomingData, userIdPath, null) as string | null;
-    if (!userId) {
-      throw new CustomError(`userId in payload at path "${userIdPath}" was not found.`, 401);
+    const cognitoId = _.get(incomingData, cognitoIdPath, null) as string | null;
+    if (!cognitoId) {
+      throw new CustomError(`partnerId at path "${cognitoIdPath}" was not found.`, 401);
     }
-    const jwt = incomingData.routeData.jwt as NycIdJwtType | undefined | null;
+    const jwt = incomingData.routeData.jwt as CognitoJwtType | undefined | null;
     if (!jwt) {
       throw new CustomError('Token does not exist.', 403);
     }
@@ -19,9 +20,9 @@ export const tokenOwnsRequestedUser =
     if (!user) {
       throw new CustomError('User does not exist.', 401);
     } else {
-      if (jwt['GUID'] !== userId) {
+      if (jwt['cognito:username'] !== cognitoId) {
         throw new CustomError(
-          `This user cannot perform this action only to items owned or created by themselves. ${jwt['GUID']} != ${userId}.`,
+          `User's can perform profile modifications only unto themselves. ${jwt['cognito:username']} != ${cognitoId}.`,
           403,
         );
       }

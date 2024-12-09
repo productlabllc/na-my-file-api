@@ -8,7 +8,7 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 
 import { getDB } from '../../lib/db';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';

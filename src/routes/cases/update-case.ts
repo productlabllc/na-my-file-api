@@ -6,7 +6,7 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { UpdateCaseRequestBodySchema, UpdateCaseResponseSchema } from '../../lib/route-schemas/case.schema';
 import { UpdateCaseRequestBody } from '../../lib/route-interfaces';
 import { getDB } from '../../lib/db';

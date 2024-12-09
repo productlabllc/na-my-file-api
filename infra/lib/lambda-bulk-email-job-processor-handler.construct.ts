@@ -1,5 +1,4 @@
 import {
-  NestedStack,
   aws_lambda_nodejs as lambdaNodeJS,
   aws_sqs as sqs,
   aws_iam as iam,
@@ -8,11 +7,10 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
-interface ActivityLogConstructProps extends ExtendedStackProps {
+interface BulkEmailJobProcessorHandlerConstructProps extends ExtendedStackProps {
   // Add properties here
   name: string;
   ssmVpcId: string;
@@ -23,38 +21,37 @@ interface ActivityLogConstructProps extends ExtendedStackProps {
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
-  sqsActivityLogQueue: sqs.IQueue;
+  sqsSendEmailRequestQueue: sqs.IQueue;
 }
-export class LambdaActivityLogConstruct extends Construct {
-  public readonly activityLogHandler: lambdaNodeJS.NodejsFunction;
+export class BulkEmailJobProcessorHandlerConstruct extends Construct {
+  public readonly lambdaHandler: lambdaNodeJS.NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: ActivityLogConstructProps) {
+  constructor(scope: Construct, id: string, props: BulkEmailJobProcessorHandlerConstructProps) {
     super(scope, id);
 
-    const { deploymentTarget, sqsActivityLogQueue } = props;
+    const { deploymentTarget } = props;
 
     const vpc = ec2.Vpc.fromLookup(this, 'vpc', {
       vpcId: props.ssmVpcId,
     });
 
-    this.activityLogHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
+    this.lambdaHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
       runtime: Runtime.NODEJS_18_X,
       vpc,
       memorySize: props.lambdaMemorySizeInMb,
       timeout: Duration.seconds(props.lambdaTimeoutInSeconds),
-      loggingFormat: LoggingFormat.JSON,
-      logRetention: RetentionDays.ONE_DAY,
+      logRetention: RetentionDays.ONE_WEEK,
 
       // vpc,
       environment: {
         ...props.envVars,
         TIMESTAMP: Date.now().toString(),
-        SQS_ACTIVITY_LOG_QUEUE_URL: props.sqsActivityLogQueue.queueUrl,
-        SQS_ACTIVITY_LOG_QUEUE_NAME: props.sqsActivityLogQueue.queueName,
+        SEND_EMAIL_QUEUE_URL: props.sqsSendEmailRequestQueue.queueUrl,
+        PUBLIC_ASSET_HOST: 'https://myfile.us.gov',
+        SEND_EMAIL_QUEUE_NAME: props.sqsSendEmailRequestQueue.queueName,
       },
-      events: [new SqsEventSource(sqsActivityLogQueue)],
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
@@ -77,9 +74,9 @@ export class LambdaActivityLogConstruct extends Construct {
     });
 
     if (props.iamPolicy) {
-      this.activityLogHandler.addToRolePolicy(props.iamPolicy);
+      this.lambdaHandler.addToRolePolicy(props.iamPolicy);
     }
 
-    sqsActivityLogQueue.grantConsumeMessages(this.activityLogHandler);
+    props.sqsSendEmailRequestQueue.grantSendMessages(this.lambdaHandler);
   }
 }

@@ -3,7 +3,7 @@ import {
   RouteArguments,
   RouteSchema,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import joi = require('joi');
 import postMessageToConnection from '../../lib/post-message-to-connection';

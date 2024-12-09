@@ -5,14 +5,18 @@ import {
   aws_iam as iam,
   aws_ec2 as ec2,
   Duration,
+  aws_s3 as s3,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
 import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { S3EventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { S3Prefix } from '../../src/lib/constants';
+import { Bucket, EventType } from 'aws-cdk-lib/aws-s3';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
-interface ActivityLogConstructProps extends ExtendedStackProps {
+interface S3FileUploadTriggerHandlerConstructProps extends ExtendedStackProps {
   // Add properties here
   name: string;
   ssmVpcId: string;
@@ -23,21 +27,22 @@ interface ActivityLogConstructProps extends ExtendedStackProps {
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
-  sqsActivityLogQueue: sqs.IQueue;
+  documentsBucket: Bucket;
+  pdfGeneratorQueue: sqs.IQueue;
 }
-export class LambdaActivityLogConstruct extends Construct {
-  public readonly activityLogHandler: lambdaNodeJS.NodejsFunction;
+export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
+  public readonly s3FileUploadHandler: lambdaNodeJS.NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: ActivityLogConstructProps) {
+  constructor(scope: Construct, id: string, props: S3FileUploadTriggerHandlerConstructProps) {
     super(scope, id);
 
-    const { deploymentTarget, sqsActivityLogQueue } = props;
+    const { deploymentTarget, pdfGeneratorQueue, documentsBucket } = props;
 
     const vpc = ec2.Vpc.fromLookup(this, 'vpc', {
       vpcId: props.ssmVpcId,
     });
 
-    this.activityLogHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
+    this.s3FileUploadHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
       runtime: Runtime.NODEJS_18_X,
@@ -45,16 +50,14 @@ export class LambdaActivityLogConstruct extends Construct {
       memorySize: props.lambdaMemorySizeInMb,
       timeout: Duration.seconds(props.lambdaTimeoutInSeconds),
       loggingFormat: LoggingFormat.JSON,
-      logRetention: RetentionDays.ONE_DAY,
+      logRetention: RetentionDays.ONE_WEEK,
 
       // vpc,
       environment: {
         ...props.envVars,
         TIMESTAMP: Date.now().toString(),
-        SQS_ACTIVITY_LOG_QUEUE_URL: props.sqsActivityLogQueue.queueUrl,
-        SQS_ACTIVITY_LOG_QUEUE_NAME: props.sqsActivityLogQueue.queueName,
       },
-      events: [new SqsEventSource(sqsActivityLogQueue)],
+      reservedConcurrentExecutions: 1,
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
@@ -76,10 +79,26 @@ export class LambdaActivityLogConstruct extends Construct {
       },
     });
 
-    if (props.iamPolicy) {
-      this.activityLogHandler.addToRolePolicy(props.iamPolicy);
-    }
+    this.s3FileUploadHandler.addEventSource(
+      new S3EventSource(documentsBucket, {
+        events: [EventType.OBJECT_CREATED],
+        filters: [
+          {
+            prefix: S3Prefix.USER_FILES,
+          },
+        ],
+      }),
+    );
 
-    sqsActivityLogQueue.grantConsumeMessages(this.activityLogHandler);
+    this.s3FileUploadHandler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['sqs:DeleteMessageBatch'],
+        resources: [pdfGeneratorQueue.queueArn],
+      }),
+    );
+
+    documentsBucket.grantReadWrite(this.s3FileUploadHandler);
+
+    pdfGeneratorQueue.grantSendMessages(this.s3FileUploadHandler);
   }
 }

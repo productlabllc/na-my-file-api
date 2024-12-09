@@ -1,18 +1,21 @@
 import {
-  NestedStack,
   aws_lambda_nodejs as lambdaNodeJS,
   aws_sqs as sqs,
   aws_iam as iam,
   aws_ec2 as ec2,
   Duration,
+  aws_s3 as s3,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Code, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { join } from 'path';
 
-interface ActivityLogConstructProps extends ExtendedStackProps {
+interface LambdaCriterionCalcProps extends ExtendedStackProps {
   // Add properties here
   name: string;
   ssmVpcId: string;
@@ -23,38 +26,35 @@ interface ActivityLogConstructProps extends ExtendedStackProps {
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
-  sqsActivityLogQueue: sqs.IQueue;
+  criterionCalcQue: sqs.IQueue;
 }
-export class LambdaActivityLogConstruct extends Construct {
-  public readonly activityLogHandler: lambdaNodeJS.NodejsFunction;
+export class LambdaCriterionCalcConstruct extends Construct {
+  public readonly criterionCalcFunction: lambdaNodeJS.NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: ActivityLogConstructProps) {
+  constructor(scope: Construct, id: string, props: LambdaCriterionCalcProps) {
     super(scope, id);
 
-    const { deploymentTarget, sqsActivityLogQueue } = props;
+    const { deploymentTarget, criterionCalcQue } = props;
 
     const vpc = ec2.Vpc.fromLookup(this, 'vpc', {
       vpcId: props.ssmVpcId,
     });
 
-    this.activityLogHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
+    this.criterionCalcFunction = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
       runtime: Runtime.NODEJS_18_X,
       vpc,
       memorySize: props.lambdaMemorySizeInMb,
       timeout: Duration.seconds(props.lambdaTimeoutInSeconds),
-      loggingFormat: LoggingFormat.JSON,
-      logRetention: RetentionDays.ONE_DAY,
-
+      logRetention: RetentionDays.ONE_WEEK,
+      events: [new SqsEventSource(criterionCalcQue)],
       // vpc,
       environment: {
         ...props.envVars,
         TIMESTAMP: Date.now().toString(),
-        SQS_ACTIVITY_LOG_QUEUE_URL: props.sqsActivityLogQueue.queueUrl,
-        SQS_ACTIVITY_LOG_QUEUE_NAME: props.sqsActivityLogQueue.queueName,
       },
-      events: [new SqsEventSource(sqsActivityLogQueue)],
+
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
@@ -76,10 +76,13 @@ export class LambdaActivityLogConstruct extends Construct {
       },
     });
 
-    if (props.iamPolicy) {
-      this.activityLogHandler.addToRolePolicy(props.iamPolicy);
-    }
+    criterionCalcQue.grantConsumeMessages(this.criterionCalcFunction);
 
-    sqsActivityLogQueue.grantConsumeMessages(this.activityLogHandler);
+    this.criterionCalcFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['sqs:DeleteMessageBatch'],
+        resources: [criterionCalcQue.queueArn],
+      }),
+    );
   }
 }

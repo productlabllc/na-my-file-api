@@ -1,11 +1,21 @@
-import { aws_lambda_nodejs as lambda, aws_ec2 as ec2, aws_iam as iam, aws_sqs as sqs, Duration } from 'aws-cdk-lib';
+import {
+  aws_lambda_nodejs as lambda,
+  aws_ec2 as ec2,
+  aws_iam as iam,
+  aws_sqs as sqs,
+  Duration,
+  aws_s3 as s3,
+  RemovalPolicy,
+} from 'aws-cdk-lib';
 import { HttpApi, HttpRoute, HttpRouteKey, HttpMethod, PayloadFormatVersion } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Construct } from 'constructs';
-import { RouteConfig } from '@myfile/core-sdk';
+import { RouteConfig } from 'aws-lambda-api-tools';
 import { ExtendedStackProps } from './stack-interfaces';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { CustomHttpLambdaIntegration } from './CustomHttpLambdaIntegration';
 
 export interface LambdaProxyApiProps extends ExtendedStackProps {
   name: string;
@@ -18,8 +28,12 @@ export interface LambdaProxyApiProps extends ExtendedStackProps {
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
+  documentsBucket: Bucket;
+  pdfGeneratorQueue: sqs.IQueue;
+  caseCriterionCalcQueue: sqs.IQueue;
   sqsBroadcastMessageQueue: sqs.IQueue;
   sqsActivityLogQueue: sqs.IQueue;
+  sendEmailQueue: sqs.IQueue;
 }
 
 export class LambdaProxyApi extends Construct {
@@ -29,7 +43,7 @@ export class LambdaProxyApi extends Construct {
     super(scope, id);
 
     // @ts-ignore
-    const { awsRegion, deploymentTarget, envVars = {} } = props;
+    const { awsRegion, deploymentTarget, documentsBucket, caseCriterionCalcQueue } = props;
 
     const httpApi = HttpApi.fromHttpApiAttributes(this, 'http-api', {
       httpApiId: props.ssmHttpApiId,
@@ -58,6 +72,7 @@ export class LambdaProxyApi extends Construct {
           SQS_BROADCAST_MSG_QUEUE_NAME: props.sqsBroadcastMessageQueue.queueName,
           SQS_ACTIVITY_LOG_QUEUE_URL: props.sqsActivityLogQueue.queueUrl,
         },
+        loggingFormat: LoggingFormat.JSON,
         logRetention: RetentionDays.ONE_WEEK,
         // bundling: {
         //   nodeModules: props.noBundlingNodeModules,
@@ -87,15 +102,24 @@ export class LambdaProxyApi extends Construct {
       },
     );
 
+    documentsBucket.grantReadWrite(this.lambdaProxyRouteEntryHandler);
+
     props.sqsBroadcastMessageQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
     props.sqsActivityLogQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
+    props.sendEmailQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
+
+    // Lambda Proxy Can trigger pdf generation
+    props.pdfGeneratorQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
+
+    // Lambda proxy can dispatch case criterion calculation events
+    caseCriterionCalcQueue.grantSendMessages(this.lambdaProxyRouteEntryHandler);
 
     // new iam.PolicyStatement({
     //   effect: iam.Effect.ALLOW,
     //   resources: ['*'],
     //   actions: ['lambda:InvokeFunction'],
     // })
-    
+
     if (props.iamPolicy) {
       this.lambdaProxyRouteEntryHandler.addToRolePolicy(props.iamPolicy);
     }
@@ -106,16 +130,18 @@ export class LambdaProxyApi extends Construct {
     ${JSON.stringify(props.routeConfig.routes)}
     `);
 
+    const httpLambdaIntegration = new CustomHttpLambdaIntegration(
+      `lambda-proxy-integration-${deploymentTarget}`,
+      this.lambdaProxyRouteEntryHandler,
+      {
+        payloadFormatVersion: PayloadFormatVersion.VERSION_2_0,
+      },
+    );
+
     props.routeConfig.routes.forEach(({ method, path }) => {
       new HttpRoute(this, `http-route-${method}-${path}`, {
         httpApi,
-        integration: new HttpLambdaIntegration(
-          `lambda-proxy-integration-${deploymentTarget}`,
-          this.lambdaProxyRouteEntryHandler,
-          {
-            payloadFormatVersion: PayloadFormatVersion.VERSION_2_0,
-          },
-        ),
+        integration: httpLambdaIntegration,
         routeKey: HttpRouteKey.with(path, method as HttpMethod),
       });
     });

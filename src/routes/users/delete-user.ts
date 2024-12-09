@@ -6,9 +6,9 @@ import {
   RouteSchema,
   jwtValidationMiddleware,
   schemaValidationMiddleware,
-} from '@myfile/core-sdk';
+} from 'aws-lambda-api-tools';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
-import { NycIdJwtType } from '@myfile/core-sdk/dist/lib/types-and-interfaces';
+import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 
 const routeSchema: RouteSchema = {};
@@ -16,7 +16,7 @@ const routeSchema: RouteSchema = {};
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
   const db = getDB();
 
-  const jwt: NycIdJwtType = input.routeData.jwt;
+  const jwt: CognitoJwtType = input.routeData.jwt;
 
   const user = await getUserByEmail(jwt?.email);
 
