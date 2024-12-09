@@ -15,8 +15,9 @@ import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { DeleteCaseFileRequestSchema } from '../../lib/route-schemas/case-file.schema';
 import { DeleteCaseFileRequest } from '../../lib/route-interfaces';
-import { CAN_ADD_CASE_FILE, CASE_OWNER } from '../../lib/constants';
-import { logActivity } from '../../lib/sqs';
+import { CLIENT } from '../../lib/constants';
+import { triggerCaseCriterionCalculation } from '../../lib/sqs';
+import logRemoveCaseFiles from '../../lib/data/log-remove-case-files';
 
 const routeSchema: RouteSchema = {
   params: {
@@ -33,46 +34,93 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const user = await getUserByEmail(jwt?.email);
 
+  const requestBody: DeleteCaseFileRequest = input.body;
+
   const existingCase = await db.case.findFirst({
     where: {
       id: caseId,
+      CaseTeamAssignments: {
+        some: {
+          UserId: user.id,
+          CaseRole: CLIENT,
+        },
+      },
     },
-    select: {
+    include: {
       CaseTeamAssignments: {
         where: {
-          CaseRole: CASE_OWNER,
+          CaseRole: CLIENT,
+        },
+        include: {
+          User: true,
+        },
+      },
+      CaseFiles: {
+        include: {
+          Case: {
+            include: {
+              CaseTeamAssignments: {
+                where: {
+                  CaseRole: CLIENT,
+                  DeletedAt: null,
+                },
+                include: {
+                  User: {
+                    where: {
+                      DeletedAt: null,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          CaseCriterion: {
+            where: {
+              DeletedAt: null,
+            },
+          },
+          GeneratedFile: {
+            include: {
+              UserFamilyMember: {
+                where: {
+                  DeletedAt: null,
+                },
+              },
+            },
+          },
+        },
+        where: {
+          GeneratedFileId: {
+            in: requestBody.GeneratedFileIds.map(ele => ele),
+          },
+          CaseCriterionId: requestBody.CaseCriterionId,
         },
       },
     },
   });
 
-  // make sure this use can remove these files
-  if (!(await user.isUserInGroup(CAN_ADD_CASE_FILE)) && existingCase?.CaseTeamAssignments[0]?.UserId !== user.id) {
-    throw new CustomError('User does not have permission to add files to case', 403);
+  if (!existingCase || !existingCase.CaseTeamAssignments.length) {
+    throw new CustomError(JSON.stringify({ message: 'Failed to identify Case or member does not own this case' }), 400);
   }
-
-  const requestBody: DeleteCaseFileRequest = input.body;
 
   const data = await db.caseFile.softDeleteMany({
     where: {
       AND: {
         CaseId: caseId,
-        UserFileId: {
-          in: requestBody.UserFileIds.map(ele => ele),
+        GeneratedFileId: {
+          in: requestBody.GeneratedFileIds.map(ele => ele),
         },
+        CaseCriterionId: requestBody.CaseCriterionId,
       },
     },
   });
 
-  await logActivity({
-    activityType: 'REMOVE_CASE_FILES',
-    activityValue: `User (${user.Email} - ${user.IdpId}) removed case files (${requestBody.UserFileIds}) for case ${caseId}`,
-    userId: user.id,
-    timestamp: new Date(),
-    metadataJson: JSON.stringify({ request: input }),
-    activityRelatedEntityId: caseId,
-    activityRelatedEntity: 'CASE',
+  await triggerCaseCriterionCalculation({
+    caseId,
+    caseCriterionId: requestBody.CaseCriterionId,
   });
+
+  await logRemoveCaseFiles(existingCase.CaseFiles, user, input);
 
   return data;
 };

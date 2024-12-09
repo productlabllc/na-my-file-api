@@ -35,9 +35,10 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   });
 
   await logActivity({
-    activityType: 'GET_FAMILY_MEMBER_BY_ID',
-    activityValue: `User (${user.Email} - ${user.IdpId}) retrieved family member.`,
+    activityType: 'CLIENT_GET_FAMILY_MEMBER_BY_ID',
+    activityValue: JSON.stringify({ value: data }),
     userId: user.id,
+    familyMemberIds: data?.id ? [data?.id] : [],
     timestamp: new Date(),
     metadataJson: JSON.stringify({ request: input }),
     activityRelatedEntityId: id,

@@ -11,14 +11,11 @@ import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getDB } from '../../lib/db';
 
-import {
-  UpdateFamilyMemberRequestSchema,
-  UpdateFamilyMemberResponseSchema,
-} from '../../lib/route-schemas/family-member.schema';
+import { UpdateUserFileRequestSchema, UpdateUserFileResponseSchema } from '../../lib/route-schemas/user-file.schema';
 
 export const routeSchema: RouteSchema = {
-  requestBody: UpdateFamilyMemberRequestSchema,
-  responseBody: UpdateFamilyMemberResponseSchema,
+  requestBody: UpdateUserFileRequestSchema,
+  responseBody: UpdateUserFileResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
@@ -45,7 +42,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       });
 
       if (!familyMember) {
-        throw new CustomError(`Family member ${familyMemberId} not found`, 400);
+        throw new CustomError(JSON.stringify({ message: `Family member ${familyMemberId} not found` }), 400);
       }
     }
     const userFile = await db.$transaction(async db => {

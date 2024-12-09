@@ -3,13 +3,26 @@
  * Do not modify this file manually
  */
 
+import { BaseCaseFile, UserBase, BaseUserFile, BaseFamilyMember, UploadedMediaAssetVersion } from '.';
+
 export interface CreateUserFileRequest {
+  CaseCriterionId?: string;
+  DeletedFiles?: string[];
+  Description?: string;
+  FileType?: string;
   Files: {
     ContentType: string;
     OriginalFilename: string;
     PageNumber: number;
     SizeInBytes: number;
+    id: string;
   }[];
+  FilesOrder?: {
+    id: string;
+    old: boolean;
+  }[];
+  ForUserId?: string;
+  GeneratedFileId?: string;
   Title: string;
   UserFamilyMemberId?: string;
 }
@@ -23,20 +36,59 @@ export interface DeleteUserFileRequest {
 }
 
 export interface GeneratedUserFile {
+  CaseFiles?: BaseCaseFile[];
   ContentType?: string;
   CreatedAt?: Date;
+  CreatedByAgentUser?: UserBase;
+  CreatedByAgentUserId?: string;
+  CreatedByUser?: UserBase;
+  CreatedByUserId?: string;
+  Description?: string;
+  FamilyMemberId?: string;
+  FileType?: string;
+  FromUserFiles?: BaseUserFile[];
   LastModifiedAt?: Date;
   OriginalFilename?: string;
   SizeInBytes?: number;
   Status?: string;
   Title?: string;
+  UserFamilyMember?: BaseFamilyMember;
   id: string;
 }
+
+export interface GeneratedUserFile {
+  CaseFiles?: BaseCaseFile[];
+  ContentType?: string;
+  CreatedAt?: Date;
+  CreatedByAgentUser?: UserBase;
+  CreatedByAgentUserId?: string;
+  CreatedByUser?: UserBase;
+  CreatedByUserId?: string;
+  Description?: string;
+  FamilyMemberId?: string;
+  FileType?: string;
+  FromUserFiles?: BaseUserFile[];
+  LastModifiedAt?: Date;
+  OriginalFilename?: string;
+  SizeInBytes?: number;
+  Status?: string;
+  Title?: string;
+  UserFamilyMember?: BaseFamilyMember;
+  id: string;
+}
+
+export type GetUserFileTypesResponse = {
+  documentGroup: string;
+  documentName: string;
+}[];
 
 export type GetUserFilesResponse = UserFile[];
 
 export interface UpdateGeneratedFileRequest {
   ContentType?: string;
+  Description?: string;
+  File?: Record<string, never>;
+  FileType?: string;
   OriginalFilename?: string;
   SizeInBytes?: number;
   Status?: string;
@@ -45,18 +97,30 @@ export interface UpdateGeneratedFileRequest {
 }
 
 export interface UpdateGeneratedFileResponse {
+  CaseFiles?: BaseCaseFile[];
   ContentType?: string;
   CreatedAt?: Date;
+  CreatedByAgentUser?: UserBase;
+  CreatedByAgentUserId?: string;
+  CreatedByUser?: UserBase;
+  CreatedByUserId?: string;
+  Description?: string;
+  FamilyMemberId?: string;
+  FileType?: string;
+  FromUserFiles?: BaseUserFile[];
   LastModifiedAt?: Date;
   OriginalFilename?: string;
   SizeInBytes?: number;
   Status?: string;
   Title?: string;
+  UserFamilyMember?: BaseFamilyMember;
   id: string;
 }
 
 export interface UpdateUserFileRequest {
+  CaseCriterionId?: string;
   ContentType?: string;
+  ForUserId?: string;
   OriginalFilename?: string;
   PageNumber?: number;
   SizeInBytes?: number;
@@ -71,6 +135,11 @@ export interface UpdateUserFileResponse {
   ContentType: string;
   CreatedAt?: Date;
   CreatedByUserId?: string;
+  FilePath?: string;
+  FileType?: string;
+  FileUploadedAt?: Date;
+  GeneratedFile?: GeneratedUserFile;
+  GeneratedFileId?: string;
   LastModifiedAt?: Date;
   LastModifiedByUserId?: string;
   LegacyId?: string;
@@ -79,8 +148,10 @@ export interface UpdateUserFileResponse {
   Title: string;
   UploadUrl?: string;
   UploadUrls?: string[];
-  UploadedMediaAssetVersions?: object[];
+  UploadedMediaAssetVersions?: UploadedMediaAssetVersion[];
+  UserFamilyMember?: BaseFamilyMember;
   id?: string;
+  oldId?: string;
 }
 
 export interface UserFile {
@@ -88,6 +159,11 @@ export interface UserFile {
   ContentType: string;
   CreatedAt?: Date;
   CreatedByUserId?: string;
+  FilePath?: string;
+  FileType?: string;
+  FileUploadedAt?: Date;
+  GeneratedFile?: GeneratedUserFile;
+  GeneratedFileId?: string;
   LastModifiedAt?: Date;
   LastModifiedByUserId?: string;
   LegacyId?: string;
@@ -96,8 +172,10 @@ export interface UserFile {
   Title: string;
   UploadUrl?: string;
   UploadUrls?: string[];
-  UploadedMediaAssetVersions?: object[];
+  UploadedMediaAssetVersions?: UploadedMediaAssetVersion[];
+  UserFamilyMember?: BaseFamilyMember;
   id?: string;
+  oldId?: string;
 }
 
 export interface UserFileDownloadResponse {

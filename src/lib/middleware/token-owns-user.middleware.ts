@@ -1,8 +1,7 @@
 import { CustomError, RouteArguments } from 'aws-lambda-api-tools';
 import { getUserByEmail } from '../data/get-user-by-idp-id';
 import _ = require('lodash');
-import { CognitoJwtType } from '../types-and-interfaces';
-
+import { CognitoJwtType } from '../../lib/types-and-interfaces';
 
 export const tokenOwnsRequestedUser =
   (cognitoIdPath: string) =>
@@ -10,11 +9,14 @@ export const tokenOwnsRequestedUser =
     const { routeData = {} } = incomingData;
     const cognitoId = _.get(incomingData, cognitoIdPath, null) as string | null;
     if (!cognitoId) {
-      throw new CustomError(`partnerId at path "${cognitoIdPath}" was not found.`, 401);
+      throw new CustomError(
+        JSON.stringify({ message: `userId in payload at path "${cognitoIdPath}" was not found.` }),
+        401,
+      );
     }
     const jwt = incomingData.routeData.jwt as CognitoJwtType | undefined | null;
     if (!jwt) {
-      throw new CustomError('Token does not exist.', 403);
+      throw new CustomError(JSON.stringify({ message: 'Token does not exist.' }), 403);
     }
     const user = await getUserByEmail(jwt?.email);
     if (!user) {

@@ -24,6 +24,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
         id: true,
         Name: true,
         Description: true,
+        Type: true,
         CreatedAt: true,
         WorkflowStage: true,
       },

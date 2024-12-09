@@ -1,4 +1,82 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { CAN_ADD_CASE_FILE_WORKFLOW_ROLES } from './constants';
+
+type Models = Omit<
+  PrismaClient,
+  | '$transaction'
+  | '$queryRawUnsafe'
+  | '$queryRaw'
+  | '$on'
+  | '$extends'
+  | '$executeRawUnsafe'
+  | '$executeRaw'
+  | '$disconnect'
+  | '$connect'
+  | '$use'
+  | symbol
+>;
+const generateSdMethods = <T extends PrismaClient, K extends keyof Models>({
+  client,
+  model,
+}: {
+  client: T;
+  model: K;
+}) => {
+  return {
+    async softDelete({
+      where,
+      select,
+    }: {
+      where: Parameters<T[K]['update']>[0]['where'];
+      select?: Parameters<T[K]['update']>[0]['select'];
+    }) {
+      return (client[model] as any).update({
+        where,
+        select,
+        data: {
+          DeletedAt: new Date(),
+        },
+      });
+    },
+    async softDeleteMany({ where }: { where: Parameters<T[K]['updateMany']>[0]['where'] }) {
+      return (client[model] as any).updateMany({
+        where,
+        data: {
+          DeletedAt: new Date(),
+        },
+      });
+    },
+  };
+};
+
+const sdModules: (keyof Models)[] = [
+  'case',
+  'caseApplicant',
+  'caseCriterion',
+  'caseFile',
+  'caseNote',
+  'caseTeamAssignment',
+  'generatedFile',
+  'language',
+  'language',
+  'platformActivityLog',
+  'stakeholderGroup',
+  'stakeholderGroupRole',
+  'uploadedMediaAssetVersion',
+  'user',
+  'userAttribute',
+  'userFamilyMember',
+  'userFile',
+  'user_StakeholderGroupRole',
+  'workflow',
+  'workflowStage',
+  'workflowStageCriterion',
+];
+
+export type SdModule = Record<
+  (typeof sdModules)[0],
+  ReturnType<typeof generateSdMethods<PrismaClient, (typeof sdModules)[0]>>
+>;
 
 const getNewClient = () => {
   const prisma = new PrismaClient({
@@ -33,6 +111,13 @@ const getNewClient = () => {
     console.log('Duration: ' + e.duration + 'ms');
   });
 
+  const sdMethods = sdModules.reduce((prev: SdModule, current) => {
+    return {
+      ...prev,
+      [current]: generateSdMethods<typeof prisma, typeof current>({ client: prisma, model: current }),
+    };
+  }, {} as SdModule);
+
   return prisma.$extends({
     name: 'softDelete',
     result: {
@@ -55,273 +140,39 @@ const getNewClient = () => {
             };
           },
         },
-      },
-    },
-    model: {
-      uploadedMediaAssetVersion: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.UploadedMediaAssetVersionWhereUniqueInput;
-          select?: Prisma.UploadedMediaAssetVersionSelect;
-        }) {
-          await prisma.uploadedMediaAssetVersion.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.UploadedMediaAssetVersionWhereInput }) {
-          await prisma.uploadedMediaAssetVersion.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      userFile: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.UserFileWhereUniqueInput;
-          select?: Prisma.UserFileSelect;
-        }) {
-          await prisma.userFile.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.UserFileWhereInput }) {
-          await prisma.userFile.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      user: {
-        async softDelete({ where, select }: { where: Prisma.UserWhereUniqueInput; select?: Prisma.UserSelect }) {
-          await prisma.user.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.UserWhereInput }) {
-          await prisma.user.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      userWorkflow: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.UserWorkflowWhereUniqueInput;
-          select?: Prisma.UserWorkflowSelect;
-        }) {
-          await prisma.userWorkflow.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.UserWorkflowWhereInput }) {
-          await prisma.userWorkflow.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      case: {
-        async softDelete({ where, select }: { where: Prisma.CaseWhereUniqueInput; select?: Prisma.CaseSelect }) {
-          await prisma.case.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.CaseWhereInput }) {
-          await prisma.case.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      caseApplicant: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.CaseApplicantWhereUniqueInput;
-          select?: Prisma.CaseApplicantSelect;
-        }) {
-          await prisma.caseApplicant.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.CaseApplicantWhereInput }) {
-          await prisma.caseApplicant.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      caseNote: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.CaseNoteWhereUniqueInput;
-          select?: Prisma.CaseNoteSelect;
-        }) {
-          await prisma.caseNote.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.CaseNoteWhereInput }) {
-          await prisma.caseNote.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      caseTeamAssignment: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.CaseTeamAssignmentWhereUniqueInput;
-          select?: Prisma.CaseTeamAssignmentSelect;
-        }) {
-          await prisma.caseTeamAssignment.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.CaseTeamAssignmentWhereInput }) {
-          await prisma.caseTeamAssignment.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      caseCriterion: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.CaseCriterionWhereUniqueInput;
-          select?: Prisma.CaseCriterionSelect;
-        }) {
-          await prisma.caseCriterion.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.CaseCriterionWhereInput }) {
-          await prisma.caseCriterion.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      caseFile: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.CaseFileWhereUniqueInput;
-          select?: Prisma.CaseFileSelect;
-        }) {
-          await prisma.caseFile.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.CaseFileWhereInput }) {
-          await prisma.caseFile.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-      },
-      userFamilyMember: {
-        async softDelete({
-          where,
-          select,
-        }: {
-          where: Prisma.UserFamilyMemberWhereUniqueInput;
-          select?: Prisma.UserFamilyMemberSelect;
-        }) {
-          await prisma.userFamilyMember.update({
-            where,
-            select,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
-        },
-        async softDeleteMany({ where }: { where: Prisma.UserFamilyMemberWhereInput }) {
-          await prisma.userFamilyMember.updateMany({
-            where,
-            data: {
-              DeletedAt: new Date(),
-            },
-          });
+        canViewGeneratedFile: {
+          needs: { id: true },
+          compute(user) {
+            return async (id: string) => {
+              /**
+               * is user file linked to a case
+               */
+
+              const caseFiles = await db.caseFile.findMany({
+                where: {
+                  AND: {
+                    GeneratedFileId: id,
+                    Case: {
+                      CaseTeamAssignments: {
+                        some: {
+                          CaseRole: {
+                            in: CAN_ADD_CASE_FILE_WORKFLOW_ROLES,
+                          },
+                          UserId: user.id,
+                        },
+                      },
+                    },
+                  },
+                },
+              });
+
+              return !!caseFiles.length;
+            };
+          },
         },
       },
     },
+    model: sdMethods,
   });
 };
 let db: ReturnType<typeof getNewClient>;
@@ -344,28 +195,7 @@ export const getDB = () => {
     db = getNewClient();
   } catch (err) {
     throw err;
-    // db = new PrismaClient({
-    //   // log: ['query', 'info', 'warn', 'error'],
-    // });
   }
 
   return db;
 };
-
-// const addExtensions = (prisma: PrismaClient) => {
-//   prisma.$extends({
-//     result: {
-//       dailyClaims: {
-
-//       },
-//       user: {
-//         fullName: {
-//           needs: { GivenName: true, FamilyName: true },
-//           compute(user) {
-//             return `${user.GivenName} ${user.FamilyName}`
-//           },
-//         },
-//       },
-//     },
-//   })
-// };

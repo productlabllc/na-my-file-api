@@ -14,6 +14,8 @@ import { CaseApplicantSchema } from '../../lib/route-schemas/case-applicant.sche
 import { logActivity } from '../../lib/sqs';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { ActivityLogMessageType } from '../../lib/types-and-interfaces';
+import { CLIENT } from '../../lib/constants';
 
 const routeSchema: RouteSchema = {
   params: {
@@ -28,24 +30,42 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   const jwt: CognitoJwtType = input.routeData.jwt;
   const user = await getUserByEmail(jwt?.email);
 
-  const data = await db.caseApplicant.findMany({
+  const thisCase = await db.case.findFirstOrThrow({
     where: {
-      CaseId: caseId,
+      id: caseId,
       DeletedAt: null,
+    },
+    include: {
+      CaseTeamAssignments: {
+        where: {
+          CaseRole: CLIENT,
+        },
+        include: {
+          User: true,
+        },
+      },
+      CaseApplicants: {
+        include: {
+          UserFamilyMember: true,
+        },
+      },
     },
   });
 
-  await logActivity({
-    activityType: 'ADD_CASE_FAMILY_MEMBERS',
-    activityValue: `User (${user.Email} - ${user.IdpId}) retrieved case family members (applicants) for case ${caseId}`,
+  const activityData: ActivityLogMessageType = {
+    activityType: 'CLIENT_GET_CASE_FAMILY_MEMBERS',
+    activityValue: JSON.stringify({ value: thisCase.CaseApplicants, case: thisCase }),
     userId: user.id,
     timestamp: new Date(),
+    familyMemberIds: thisCase.CaseApplicants.map(ca => ca.UserFamilyMemberId!).filter(ele => ele),
     metadataJson: JSON.stringify({ request: input }),
     activityRelatedEntityId: caseId,
-    activityRelatedEntity: 'CASE',
-  });
+    activityRelatedEntity: 'CASE_FAMILY_MEMBER',
+  };
 
-  return data;
+  await logActivity({ ...activityData, activityCategory: 'case' });
+
+  return thisCase.CaseApplicants;
 };
 
 const routeModule: RouteModule = {

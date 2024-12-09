@@ -35,8 +35,18 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   // This action deletes a user member and remove them from created cases.
   try {
+    const existingFamilyMembers = await db.userFamilyMember.findMany({
+      where: {
+        id: {
+          in: requestBody,
+        },
+      },
+      include: {
+        CaseApplicants: true,
+      },
+    });
     // We use a transaction because we want to perform each individual deletes
-    // and check that family member being deleted actualy belongs to the user.
+    // and check that family member being deleted actually belongs to the user.
     const response = await db.$transaction(async tx => {
       const proResponse = await Promise.all(
         requestBody.map(async familyMemberId => {
@@ -59,9 +69,14 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     });
 
     await logActivity({
-      activityType: 'DELETE_FAMILY_MEMBERS',
-      activityValue: `User (${user.Email} - ${user.IdpId}) deleted family members (${requestBody}).`,
+      activityType: 'CLIENT_DELETE_FAMILY_MEMBERS',
+      activityValue: JSON.stringify({
+        oldValue: existingFamilyMembers,
+        description: 'contains family members and their deleted applications',
+      }),
+      familyMemberIds: existingFamilyMembers.map(fm => fm.id),
       userId: user.id,
+      activityRelatedEntity: 'FAMILY_MEMBER',
       timestamp: new Date(),
       metadataJson: JSON.stringify({ request: input }),
     });
@@ -69,7 +84,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     return response;
   } catch (error) {
     console.error('delete error: ', error);
-    throw new CustomError('Unable to perform delete', 500);
+    throw new CustomError(JSON.stringify('Unable to perform delete'), 500);
   }
 };
 

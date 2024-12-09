@@ -3,26 +3,33 @@
  * Do not modify this file manually
  */
 
+import { BaseWorkflow, BaseCaseCriterion, BaseWorkflowStage } from '.';
+
 export interface Workflow {
   Description?: string;
   Name?: string;
+  Type?: string;
   WorkflowStages?: WorkflowStage[];
   id: string;
 }
 
 export interface WorkflowStage {
   StageName?: string;
-  Workflow?: object;
+  StagePosition?: number;
+  Workflow?: BaseWorkflow;
   WorkflowId?: string;
   WorkflowStateCriteria?: WorkflowStageCriterion[];
   id: string;
 }
 
 export interface WorkflowStageCriterion {
-  CaseCriteria?: object[];
+  CaseCriteria?: BaseCaseCriterion[];
   CaseWorkflowStageId?: string;
   CriterionFulfillmentType?: string;
+  CriterionGroupName?: string;
+  CriterionSubGroupName?: string;
+  DeletedAt?: Date;
   Name?: string;
-  WorkflowStage?: object;
+  WorkflowStage?: BaseWorkflowStage;
   id: string;
 }

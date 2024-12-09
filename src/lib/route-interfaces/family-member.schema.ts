@@ -3,7 +3,7 @@
  * Do not modify this file manually
  */
 
-import { CaseApplicant, User, UserFile } from '.';
+import { CaseApplicant, GeneratedUserFile, UserBase, UserFile } from '.';
 
 export interface CreateFamilyMemberRequest {
   DOB: Date;
@@ -16,9 +16,10 @@ export interface CreateFamilyMemberResponse {
   CaseApplicants?: CaseApplicant[];
   DOB?: Date;
   FirstName?: string;
+  GeneratedFiles?: GeneratedUserFile[];
   LastName?: string;
   Relationship?: string;
-  User?: User;
+  User?: UserBase;
   UserFiles?: UserFile[];
   UserId?: string;
   id: string;
@@ -32,16 +33,17 @@ export interface FamilyMember {
   CaseApplicants?: CaseApplicant[];
   DOB?: Date;
   FirstName?: string;
+  GeneratedFiles?: GeneratedUserFile[];
   LastName?: string;
   Relationship?: string;
-  User?: User;
+  User?: UserBase;
   UserFiles?: UserFile[];
   UserId?: string;
   id: string;
 }
 
 export interface UpdateFamilyMemberRequest {
-  Dob?: Date;
+  DOB?: Date;
   FirstName?: string;
   LastName?: string;
   Relationship?: string;
@@ -52,9 +54,10 @@ export interface UpdateFamilyMemberResponse {
   CaseApplicants?: CaseApplicant[];
   DOB?: Date;
   FirstName?: string;
+  GeneratedFiles?: GeneratedUserFile[];
   LastName?: string;
   Relationship?: string;
-  User?: User;
+  User?: UserBase;
   UserFiles?: UserFile[];
   UserId?: string;
   id: string;

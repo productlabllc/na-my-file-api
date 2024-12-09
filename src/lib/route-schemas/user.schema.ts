@@ -1,19 +1,24 @@
 import joi = require('joi');
-import { PlatformActivityLogsSchema } from './platform-activity.schema';
-import { WorkFlowSchema } from './workflow.schema';
+import { CaseActivityLogsSchema, PlatformActivityLogsSchema } from './platform-activity.schema';
+import { BasePlatformActivityLogsSchema } from './base-models.schema';
+import { CaseTeamAssignmentSchema } from './case.schema';
+import { FamilyMemberSchema } from './family-member.schema';
 
-const UserSchema = joi
+export const UserSchema = joi
   .object({
     id: joi.string().uuid(),
     FirstName: joi.string(),
     LastName: joi.string(),
     Email: joi.string().email(),
+    DOB: joi.date(),
     LegacyId: joi.string(),
     IdpId: joi.string(),
+    PlatformActivityLogs: joi.array().items(BasePlatformActivityLogsSchema),
+    LanguageIsoCode: joi.string(),
+    TOSAcceptedAt: joi.date(),
+    TOSAccepted: joi.boolean(),
   })
   .meta({ className: 'User' });
-
-export default UserSchema;
 
 export const CreateUserRequestSchema = joi
   .object({
@@ -22,7 +27,6 @@ export const CreateUserRequestSchema = joi
     Email: joi.string().email().required(),
     DOB: joi.date().required(),
     LanguageIsoCode: joi.string(),
-    Workflows: joi.array().items(joi.string().uuid()),
   })
   .meta({ className: 'CreateUserRequest' });
 
@@ -43,43 +47,67 @@ export const UpdateUserRequestSchema = joi
 
 export const UpdateUserResponseSchema = UserSchema.meta({ className: 'UpdateUserResponse' });
 
-export const AddUserWorkFlowRequestSchema = joi
-  .object({
-    WorkflowId: joi.string().uuid().required(),
-  })
-  .meta({ className: 'AddWorkFlowRequest' });
-
-export const AddUserWorkFlowResponseSchema = UserSchema.meta({ className: 'AddWorkFlowResponse' });
-
-export const DeleteUserWorkFlowRequestSchema = joi
-  .object({
-    WorkflowId: joi.string().uuid().required(),
-  })
-  .meta({ className: 'DeleteWorkFlowRequest' });
-
-export const DeleteUserWorkFlowResponseSchema = UserSchema.meta({ className: 'DeleteWorkFlowResponse' });
-
-export const GetUserWorkFlowsResponseSchema = joi
-  .array()
-  .items(WorkFlowSchema)
-  .meta({ className: 'GetUserWorkFlowsResponse' });
-
 export const GetUserActivityQuerySchema = joi
   .object({
-    filters: joi.object({
-      fromDate: joi.date(),
-      toDate: joi.date(),
-    }),
-    page: joi.number().min(1),
-    limit: joi.number().min(10),
+    activityTypes: joi.string(),
+    from: joi.date(),
+    to: joi.date().default(new Date()),
+    page: joi.number().min(1).default(1),
+    pageSize: joi.number().min(10).default(50),
   })
   .meta({ className: 'GetUserActivityQuery' });
 
 export const GetUserActivityResponseSchema = joi
   .object({
-    items: joi.array().items(PlatformActivityLogsSchema),
+    items: joi.array().items(CaseActivityLogsSchema),
     total: joi.number(),
-    page: joi.number(),
-    limit: joi.number(),
+    take: joi.number(),
+    skip: joi.number(),
+    totalPages: joi.number(),
   })
-  .meta({ className: 'GetUserActivityResponse' });
+  .meta({
+    className: 'GetUserActivityResponse',
+  });
+
+export const GetUserActivitiesResponseSchema = joi
+  .object({
+    items: joi.array().items(PlatformActivityLogsSchema),
+    currentPage: joi.number(),
+    pageSize: joi.number(),
+    total: joi.number(),
+    totalPages: joi.number(),
+  })
+  .meta({ className: 'GetUserActivitiesResponse' });
+
+export const UserCaseItem = joi.object({
+  id: joi.string().uuid(),
+  FirstName: joi.string(),
+  LastName: joi.string(),
+  Email: joi.string().email(),
+  DOB: joi.date(),
+  LegacyId: joi.string(),
+  IdpId: joi.string(),
+  LanguageIsoCode: joi.string(),
+  TOSAcceptedAt: joi.date(),
+  TOSAccepted: joi.boolean(),
+  CaseTeamAssignments: joi.array().items(CaseTeamAssignmentSchema),
+});
+
+export const GetUsersCasesSchema = joi.array().items(UserCaseItem).meta({ className: 'GetUsesCases' });
+
+export const GetUserSchema = joi
+  .object({
+    id: joi.string().uuid(),
+    FirstName: joi.string(),
+    LastName: joi.string(),
+    Email: joi.string().email(),
+    DOB: joi.date(),
+    LegacyId: joi.string(),
+    IdpId: joi.string(),
+    LanguageIsoCode: joi.string(),
+    TOSAcceptedAt: joi.date(),
+    TOSAccepted: joi.boolean(),
+    CaseTeamAssignments: joi.array().items(CaseTeamAssignmentSchema),
+    UserFamilyMembers: joi.array().items(FamilyMemberSchema),
+  })
+  .meta({ className: 'GetUser' });

@@ -11,9 +11,11 @@ import { UpdateCaseRequestBodySchema, UpdateCaseResponseSchema } from '../../lib
 import { UpdateCaseRequestBody } from '../../lib/route-interfaces';
 import { getDB } from '../../lib/db';
 import Joi = require('joi');
-import { CAN_CHANGE_APPLICATION_STATUS, CASE_OWNER } from '../../lib/constants';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { logActivity } from '../../lib/sqs';
+import { CAN_CHANGE_CASE_FILE_STATUS } from '../../lib/permissions';
+import { CLIENT } from '../../lib/constants';
+import { ActivityLogMessageType } from '../../lib/types-and-interfaces';
 
 const routeSchema: RouteSchema = {
   params: {
@@ -31,9 +33,8 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const user = await getUserByEmail(input.routeData.jwt?.email);
 
-  const canChangeApplicationStatus = await user.isUserInGroup(CAN_CHANGE_APPLICATION_STATUS);
-
   const updateValues = { ...requestBody };
+
   const updateKeys = Object.keys(updateValues) as Array<keyof typeof updateValues>;
   updateKeys.forEach(key => {
     if (updateValues[key] === undefined || updateValues[key] === null) {
@@ -41,34 +42,57 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     }
   });
 
-  const userHasCase = await db.caseTeamAssignment.findFirst({
+  const teamMember = await db.caseTeamAssignment.findFirst({
     where: {
       CaseId: caseId,
-      CaseRole: CASE_OWNER,
       UserId: user.id,
+      DeletedAt: null,
+    },
+    include: {
+      User: {
+        where: {
+          DeletedAt: null,
+        },
+        include: {
+          StakeholderGroupRoles: {
+            where: {
+              DeletedAt: null,
+            },
+            include: {
+              StakeholderGroupRole: true,
+            },
+          },
+        },
+      },
     },
   });
 
-  if (updateValues.Status && !canChangeApplicationStatus) {
-    throw new CustomError('User does not have permission to change application status', 403);
+  const hasCaseStatus = !!updateValues.Status;
+
+  if (hasCaseStatus) {
+    const userRoles = teamMember?.User?.StakeholderGroupRoles.map(role => role.StakeholderGroupRole?.Name);
+    const canUpdateCaseStatus = userRoles?.some(role => CAN_CHANGE_CASE_FILE_STATUS.includes(role as any));
+
+    if (!canUpdateCaseStatus) {
+      throw new CustomError(JSON.stringify({ message: 'User does not have permission to update this case' }), 403);
+    }
+  } else {
+    const userHasCase = teamMember?.CaseRole === CLIENT;
+
+    if (!userHasCase) {
+      throw new CustomError(JSON.stringify({ message: 'User does not have permission to update this case' }), 403);
+    }
   }
 
-  if (!updateValues.Status && !userHasCase) {
-    throw new CustomError('User does not have permission to update this case', 403);
-  }
-  await db.case.update({
-    where: {
-      id: caseId,
-    },
-    data: {
-      ...updateValues,
-    },
-  });
+  const existingCase = await db.case.findFirst({ where: { id: caseId } });
 
-  const overallCase = await db.case.findFirst({
+  const overallCase = await db.case.update({
     where: {
       id: caseId,
       DeletedAt: null,
+    },
+    data: {
+      ...updateValues,
     },
     include: {
       CaseApplicants: true,
@@ -76,15 +100,26 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     },
   });
 
-  await logActivity({
-    activityType: 'UPDATE_CASE',
-    activityValue: `User (${user.Email} - ${user.IdpId}) updated case details for case (${caseId}).`,
+  const activityData: ActivityLogMessageType = {
+    activityType:
+      hasCaseStatus && requestBody.Status === 'CLOSED'
+        ? 'AGENT_CLOSE_CASE'
+        : requestBody.Status === 'OPEN'
+          ? 'AGENT_ACTIVATE_CASE'
+          : 'CLIENT_UPDATE_CASE',
+    activityValue: JSON.stringify({
+      oldValue: existingCase,
+      case: overallCase,
+      newValue: { ...overallCase, CaseApplicants: undefined, CaseTeamAssignments: undefined },
+    }),
     userId: user.id,
     timestamp: new Date(),
     metadataJson: JSON.stringify({ request: input, updatedCase: overallCase }),
     activityRelatedEntityId: caseId,
     activityRelatedEntity: 'CASE',
-  });
+  };
+
+  await logActivity({ ...activityData, activityCategory: 'case' });
 
   return overallCase;
 };

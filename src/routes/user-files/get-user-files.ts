@@ -10,7 +10,7 @@ import { getDB } from '../../lib/db';
 import { GetUserFilesResponseSchema } from '../../lib/route-schemas/user-file.schema';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
-import { CAN_DOWNLOAD_USER_FILE, USER_FILE_STATUS } from '../../lib/constants';
+import { USER_FILE_STATUS } from '../../lib/constants';
 import Joi = require('joi');
 
 export const routeSchema: RouteSchema = {
@@ -30,12 +30,10 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     const { userId } = input.params as { userId: string };
 
-    const canDownloadFile = await user.isUserInGroup(CAN_DOWNLOAD_USER_FILE);
-
     const userOwnsTheFiles = userId === user.id;
 
-    if (!canDownloadFile && !userOwnsTheFiles) {
-      throw new CustomError('User does not have permission to download this file', 403);
+    if (!userOwnsTheFiles) {
+      throw new CustomError(JSON.stringify({ message: 'User does not have permission to download this file' }), 403);
     }
 
     const userFiles = await db.userFile.findMany({
@@ -54,19 +52,51 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
           not: USER_FILE_STATUS.DRAFT,
         },
       },
-
-      select: {
-        id: true,
-        OwnerUserId: true,
-        OriginalFilename: true,
-        Title: true,
-        ContentType: true,
-        ActiveVersionId: true,
-        Status: true,
-        CreatedAt: true,
-        LastModifiedAt: true,
-        UploadedMediaAssetVersions: true,
-        UserFamilyMember: true,
+      include: {
+        User: {
+          where: {
+            DeletedAt: null,
+          },
+        },
+        UploadedMediaAssetVersions: {
+          where: {
+            DeletedAt: null,
+          },
+        },
+        UserFamilyMember: {
+          where: {
+            DeletedAt: null,
+          },
+        },
+        GeneratedFile: {
+          where: {
+            DeletedAt: null,
+          },
+          include: {
+            UserFamilyMember: {
+              where: {
+                DeletedAt: null,
+              },
+            },
+            FromUserFiles: {
+              where: {
+                DeletedAt: null,
+              },
+              include: {
+                UserFamilyMember: {
+                  where: {
+                    DeletedAt: null,
+                  },
+                },
+                User: {
+                  where: {
+                    DeletedAt: null,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         CreatedAt: {

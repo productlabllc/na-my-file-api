@@ -3,10 +3,12 @@
  * Do not modify this file manually
  */
 
+import { BaseCase, BaseFamilyMember } from '.';
+
 export interface AddCaseApplicantsResponse {
-  Case?: object;
+  Case?: BaseCase;
   CaseId?: string;
-  UserFamilyMember?: object;
+  UserFamilyMember?: BaseFamilyMember;
   UserFamilyMemberId?: string;
 }
 
@@ -15,9 +17,9 @@ export type AddCaseFamilyMembersRequest = {
 }[];
 
 export interface CaseApplicant {
-  Case?: object;
+  Case?: BaseCase;
   CaseId?: string;
-  UserFamilyMember?: object;
+  UserFamilyMember?: BaseFamilyMember;
   UserFamilyMemberId?: string;
 }
 

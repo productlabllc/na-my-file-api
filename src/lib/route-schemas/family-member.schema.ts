@@ -1,7 +1,7 @@
 import Joi = require('joi');
-import userSchema from './user.schema';
 import { CaseApplicantSchema } from './case-applicant.schema';
-import userFileSchema from './user-file.schema';
+import userFileSchema, { GeneratedUserFileSchema } from './user-file.schema';
+import { BaseUserSchema } from './base-models.schema';
 
 export const FamilyMemberSchema = Joi.object({
   id: Joi.string().uuid().required(),
@@ -10,9 +10,10 @@ export const FamilyMemberSchema = Joi.object({
   UserId: Joi.string().uuid(),
   DOB: Joi.date(),
   Relationship: Joi.string(),
-  User: userSchema,
+  User: BaseUserSchema,
   CaseApplicants: Joi.array().items(CaseApplicantSchema),
   UserFiles: Joi.array().items(userFileSchema),
+  GeneratedFiles: Joi.array().items(GeneratedUserFileSchema),
 }).meta({ className: 'FamilyMember' });
 
 export const CreateFamilyMemberRequestSchema = Joi.object({
@@ -26,7 +27,7 @@ export const UpdateFamilyMemberRequestSchema = Joi.object({
   FirstName: Joi.string(),
   id: Joi.string().uuid().required(),
   LastName: Joi.string(),
-  Dob: Joi.date(),
+  DOB: Joi.date(),
   Relationship: Joi.string(),
 }).meta({ className: 'UpdateFamilyMemberRequest' });
 

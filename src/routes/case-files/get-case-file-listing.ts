@@ -12,13 +12,16 @@ import {
 
 import { getDB } from '../../lib/db';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
-import { CAN_VIEW_CASE_FILE_STATUS, CASE_OWNER } from '../../lib/constants';
+import { CAN_ADD_CASE_FILE_WORKFLOW_ROLES, CLIENT } from '../../lib/constants';
 import { logActivity } from '../../lib/sqs';
+import { GetCaseFileListingResponseSchema } from '../../lib/route-schemas/case-file.schema';
+import { ActivityLogMessageType } from '../../lib/types-and-interfaces';
 
 export const routeSchema: RouteSchema = {
   params: {
     caseId: Joi.string().uuid(),
   },
+  responseBody: GetCaseFileListingResponseSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
@@ -37,61 +40,105 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
         DeletedAt: null,
       },
     },
-    select: {
+    include: {
+      // Any user belonging to the case can view files
       CaseTeamAssignments: {
-        where: {
-          CaseRole: CASE_OWNER,
+        include: {
+          User: {
+            include: {
+              StakeholderGroupRoles: {
+                include: {
+                  StakeholderGroupRole: true,
+                },
+              },
+            },
+          },
         },
       },
     },
   });
 
-  const canViewCaseFileStatus = await user.isUserInGroup(CAN_VIEW_CASE_FILE_STATUS);
+  const userOwnsCase = existingCase?.CaseTeamAssignments.some(
+    member => member.UserId === user.id && member.CaseRole === CLIENT,
+  );
 
-  const userOwnsCase = existingCase?.CaseTeamAssignments[0]?.UserId === user.id;
+  // const is user in caseTeamAssignments
+  const userIsInCaseTeamAssignments = existingCase?.CaseTeamAssignments.some(ele => ele.UserId === user.id);
 
-  if (userOwnsCase || canViewCaseFileStatus) {
-    const overallCase = await db.caseFile.findMany({
+  if (!userIsInCaseTeamAssignments) {
+    throw new CustomError('User does not have permission to get case files status', 403);
+  }
+
+  if (userOwnsCase || userIsInCaseTeamAssignments) {
+    const overallCaseFiles = await db.caseFile.findMany({
       where: {
         CaseId: caseId,
         DeletedAt: null,
       },
       include: {
-        UserFile: {
-          select: {
-            id: true,
-            Title: true,
+        CaseCriterion: true,
+        Case: {
+          include: {
+            CaseTeamAssignments: {
+              where: {
+                CaseRole: CLIENT,
+              },
+              include: {
+                User: true,
+              },
+            },
+          },
+        },
+        GeneratedFile: {
+          include: {
+            UserFamilyMember: true,
           },
         },
       },
     });
 
     // const is user in caseTeamAssignments
-    const isUserInCaseTeamAssignments = existingCase?.CaseTeamAssignments.some(ele => ele.UserId === user.id);
+    const teamMember = existingCase?.CaseTeamAssignments.find(ele => ele.UserId === user.id);
 
-    if(!isUserInCaseTeamAssignments) {
-      throw new CustomError('User does not have permission to get case files status', 403);
+    const isCaseOwner = existingCase?.CaseTeamAssignments.find(ele => ele.CaseRole === CLIENT)?.UserId === user.id;
+
+    const userRoles = teamMember?.User?.StakeholderGroupRoles.map(ele => ele.StakeholderGroupRole?.Name);
+
+    const allRoles = CAN_ADD_CASE_FILE_WORKFLOW_ROLES;
+
+    const canViewCaseFile = userRoles?.some(role => allRoles.includes(role as any));
+
+    if (!canViewCaseFile && !isCaseOwner) {
+      throw new CustomError(JSON.stringify({ message: 'User does not have permission to get case files status' }), 403);
     }
 
-    await logActivity({
-      activityType: 'GET_CASE_FILE_LISTING',
-      activityValue: `User (${user.Email} - ${user.IdpId}) retrieved case file listing for case ${caseId}`,
-      userId: user.id,
-      timestamp: new Date(),
-      metadataJson: JSON.stringify({ request: input }),
-      activityRelatedEntityId: caseId,
-      activityRelatedEntity: 'CASE',
-    });
-
-    return overallCase.map(caseFile => {
+    const returnValue = overallCaseFiles.map(caseFile => {
       return {
         id: caseFile.id,
         Status: caseFile.Status,
-        UserFile: caseFile.UserFile,
+        GeneratedFile: caseFile.GeneratedFile,
       };
     });
+
+    const activityData: ActivityLogMessageType = {
+      activityType: 'CLIENT_VIEW_CASE_FILE_LIST',
+      activityValue: JSON.stringify({ case: { ...existingCase, CaseTeamAssignments: undefined }, value: returnValue }),
+      userId: user.id,
+      timestamp: new Date(),
+      caseFilIds: overallCaseFiles.map(cf => cf.id),
+      metadataJson: JSON.stringify({ request: input }),
+      activityRelatedEntityId: caseId,
+      activityRelatedEntity: 'CASE',
+    };
+
+    await logActivity({
+      ...activityData,
+      activityCategory: 'case',
+    });
+
+    return returnValue;
   } else {
-    throw new CustomError('User does not have permission to get case files status', 403);
+    throw new CustomError(JSON.stringify({ message: 'User does not have permission to get case files status' }), 403);
   }
 };
 

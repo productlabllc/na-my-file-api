@@ -1,10 +1,11 @@
 import Joi = require('joi');
+import { BaseCaseSchema, BaseFamilyMemberSchema } from './base-models.schema';
 
 export const CaseApplicantSchema = Joi.object({
   CaseId: Joi.string().uuid(),
   UserFamilyMemberId: Joi.string().uuid(),
-  UserFamilyMember: Joi.object(),
-  Case: Joi.object(),
+  UserFamilyMember: BaseFamilyMemberSchema,
+  Case: BaseCaseSchema,
 }).meta({ className: 'CaseApplicant' });
 
 export const AddCaseFamilyMembersRequestSchema = Joi.array()

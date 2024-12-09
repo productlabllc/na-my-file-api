@@ -13,7 +13,9 @@ import { UpdateUserRequest } from '../../lib/route-interfaces';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import { UpdateUserRequestSchema, UpdateUserResponseSchema } from '../../lib/route-schemas/user.schema';
-import tokenOwnsRequestedUser from '../../lib/middleware/token-owns-user.middleware';
+
+import { CAN_EDIT_PROFILE } from '../../lib/constants';
+import { logActivity } from '../../lib/sqs';
 
 const routeSchema: RouteSchema = {
   requestBody: UpdateUserRequestSchema,
@@ -38,6 +40,34 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     return acc;
   }, requestBody);
 
+  const userRoles = (
+    await db.user_StakeholderGroupRole.findMany({
+      where: {
+        UserId: user.id,
+      },
+      include: {
+        StakeholderGroupRole: true,
+      },
+    })
+  ).map(role => role.StakeholderGroupRole?.Name);
+
+  // const canEditProfile = userRoles.some(role => CAN_EDIT_PROFILE.includes(role as (typeof CAN_EDIT_PROFILE)[number]));
+
+  // if (!canEditProfile) {
+  //   throw new CustomError(
+  //     JSON.stringify({
+  //       message: 'User does not have permissions to update their profile',
+  //     }),
+  //     400,
+  //   );
+  // }
+
+  const currentUserData = await db.user.findUnique({
+    where: {
+      id: user?.id,
+    },
+  });
+
   const updatedUser = await db.user.update({
     where: {
       id: user?.id,
@@ -59,15 +89,21 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     },
   });
 
+  await logActivity({
+    activityType: 'CLIENT_UPDATE_PROFILE_SELF',
+    activityValue: JSON.stringify({ value: updatedUser, oldValue: currentUserData }),
+    userId: user.id,
+    timestamp: new Date(),
+    metadataJson: JSON.stringify({ request: input }),
+    activityRelatedEntityId: user?.id,
+    activityRelatedEntity: 'CASE_FILE',
+  });
+
   return updatedUser;
 };
 
 const routeModule: RouteModule = {
-  routeChain: [
-    jwtValidationMiddleware,
-    schemaValidationMiddleware(routeSchema),
-    handler,
-  ],
+  routeChain: [jwtValidationMiddleware, schemaValidationMiddleware(routeSchema), handler],
   routeSchema,
 };
 

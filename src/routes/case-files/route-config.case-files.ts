@@ -21,14 +21,6 @@ const caseFilesRoutes = [
     method: 'DELETE',
     path: `${routesBaseUrlPath}/cases/{caseId}/files`,
   },
-  // {
-  //   description: 'Get user files for a case',
-  //   swaggerMethodName: 'getCaseFiles',
-  //   generateOpenApiDocs: true,
-  //   handlerPath: join(routesSourceBaseDirectory, 'case-files/get-case-user-files'),
-  //   method: 'GET',
-  //   path: `${routesBaseUrlPath}/cases/{caseId}/files`,
-  // },
   {
     description: 'Get case files',
     swaggerMethodName: 'getCaseFileListing',
@@ -44,6 +36,22 @@ const caseFilesRoutes = [
     handlerPath: join(routesSourceBaseDirectory, 'case-files/update-case-file'),
     method: 'PATCH',
     path: `${routesBaseUrlPath}/cases/files/{id}`,
+  },
+  {
+    description: 'Log download case files',
+    swaggerMethodName: 'logCaseFilesDownload',
+    generateOpenApiDocs: true,
+    handlerPath: join(routesSourceBaseDirectory, 'case-files/log-download-case-files'),
+    method: 'POST',
+    path: `${routesBaseUrlPath}/cases/files/log-download`,
+  },
+  {
+    description: 'Log preview cas file',
+    swaggerMethodName: 'logPreviewCaseFile',
+    generateOpenApiDocs: true,
+    handlerPath: join(routesSourceBaseDirectory, 'case-files/log-preview-case-file'),
+    method: 'POST',
+    path: `${routesBaseUrlPath}/cases/files/log-preview`,
   },
 ] as Array<ConfigRouteEntry>;
 

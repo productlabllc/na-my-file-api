@@ -15,6 +15,7 @@ import {
   CreateFamilyMemberResponseSchema,
 } from '../../lib/route-schemas/family-member.schema';
 import { logActivity } from '../../lib/sqs';
+import { CASE_STATUS } from '../../lib/constants';
 
 const routeSchema: RouteSchema = {
   requestBody: CreateFamilyMemberRequestSchema,
@@ -49,9 +50,30 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     },
   });
 
+  const clientActiveCases = await db.case.findMany({
+    where: {
+      CaseTeamAssignments: {
+        some: {
+          UserId: userId,
+        },
+      },
+      Status: CASE_STATUS.OPEN,
+    },
+  });
+
+  for (let clientCase of clientActiveCases) {
+    await db.caseApplicant.create({
+      data: {
+        CaseId: clientCase.id,
+        UserFamilyMemberId: familyMember.id,
+      },
+    });
+  }
+
   await logActivity({
-    activityType: 'CREATE_FAMILY_MEMBER',
-    activityValue: `User (${user.Email} - ${user.IdpId}) created family member.`,
+    activityType: 'CLIENT_CREATE_FAMILY_MEMBER',
+    activityValue: JSON.stringify({ newValue: familyMember }),
+    familyMemberIds: [familyMember.id],
     userId: user.id,
     timestamp: new Date(),
     metadataJson: JSON.stringify({ request: input, familyMember }),

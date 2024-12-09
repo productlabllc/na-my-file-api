@@ -11,6 +11,7 @@ import Joi = require('joi');
 import { logActivity } from '../../lib/sqs';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
+import { ActivityLogMessageType } from '../../lib/types-and-interfaces';
 
 const routeSchema: RouteSchema = {
   params: {
@@ -24,6 +25,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   const jwt: CognitoJwtType = input.routeData.jwt;
   const user = await getUserByEmail(jwt?.email);
 
+  const existingCase = await db.case.findFirst({ where: { id: caseId } });
   // delete core case
   await db.case.softDelete({
     where: {
@@ -46,15 +48,17 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   // delete all case criterion
   await db.caseCriterion.softDeleteMany({ where: { CaseId: caseId } });
 
-  await logActivity({
-    activityType: 'DELETE_CASE',
-    activityValue: `User (${user.Email} - ${user.IdpId}) deleted case (${caseId}).`,
+  const activityType: ActivityLogMessageType = {
+    activityType: 'CLIENT_DELETE_CASE',
+    activityValue: JSON.stringify({ case: existingCase, oldValue: existingCase }),
     userId: user.id,
     timestamp: new Date(),
     metadataJson: JSON.stringify({ request: input }),
     activityRelatedEntityId: caseId,
     activityRelatedEntity: 'CASE',
-  });
+  };
+
+  await logActivity({ ...activityType, activityCategory: 'case' });
 };
 
 const routeModule: RouteModule = {

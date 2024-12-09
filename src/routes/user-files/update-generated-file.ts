@@ -33,6 +33,8 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
         ...(body.Title ? { Title: body.Title } : {}),
         ...(body.Status ? { Status: body.Status } : {}),
         ...(body.SizeInBytes ? { SizeInBytes: body.SizeInBytes } : {}),
+        ...(body.Description ? { Description: body.Description } : {}),
+        ...(body.FileType ? { FileType: body.FileType } : {}),
         ...(body.ContentType ? { ContentType: body.ContentType } : {}),
         ...(body.OriginalFilename ? { OriginalFilename: body.OriginalFilename } : {}),
       },

@@ -8,11 +8,14 @@ import caseRoutes from './routes/cases/route-config.cases';
 import userFamilyRoutes from './routes/user-family/route-config.family-member';
 import caseApplicantsRoutes from './routes/case-family-members/route-config.case-family-members';
 import workflowRoutes from './routes/workflows/route-config.workflow';
-import userWorkflowRoutes from './routes/user-workflows/route-config.user-flows';
 import userFileRoutes from './routes/user-files/route-config.user-files';
 import caseFileRoutes from './routes/case-files/route-config.case-files';
 import languageRoutes from './routes/languages/route-config.language';
-import nycidRoutes from './routes/nycid/route-config.nycid';
+import lookupRoutes from './routes/lookups/route-config.lookups';
+import constantsRoutes from './routes/constants/route-config';
+import caseNoteRoutes from './routes/case-notes/route-config.case-notes';
+import caseCriterionRouteConfig from './routes/case-criteria/route-config.case-criteria';
+import activityRoutes from './routes/activities/route-config.activities';
 
 export { routesBaseUrlPath } from './lib/utils';
 
@@ -21,14 +24,14 @@ export const config: RouteConfig = {
     // Language Routes
     ...languageRoutes,
 
+    // Lookup Routes
+    ...lookupRoutes,
+
     // Case Files routes
     ...caseFileRoutes,
 
     // User File Routes
     ...userFileRoutes,
-
-    // User Workflow Routes
-    ...userWorkflowRoutes,
 
     // Workflow Routes
     ...workflowRoutes,
@@ -45,11 +48,20 @@ export const config: RouteConfig = {
     // User Routes
     ...userRoutes,
 
-    // NYCID Routes
-    // ...nycidRoutes,
-
     /* Websocket Messaging */
     ...messagingRoutes,
+
+    /** constants */
+    ...constantsRoutes,
+
+    /** case notes */
+    ...caseNoteRoutes,
+
+    /** case criterion */
+    ...caseCriterionRouteConfig,
+
+    /** Activities */
+    ...activityRoutes,
 
     // 404 - Default Route
     {

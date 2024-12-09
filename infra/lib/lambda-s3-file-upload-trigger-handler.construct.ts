@@ -56,6 +56,7 @@ export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
       environment: {
         ...props.envVars,
         TIMESTAMP: Date.now().toString(),
+        PRISMA_CLI_QUERY_ENGINE_TYPE: 'binary',
       },
       reservedConcurrentExecutions: 1,
       bundling: {
@@ -65,17 +66,25 @@ export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
             return [];
           },
           beforeInstall(inputDir: string, outputDir: string) {
-            return [`cp -R ./prisma ${outputDir}/`];
+            return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              `npx prisma generate`,
-              `rm -rf ${outputDir}/node_modules/@prisma/engines`,
-              "find . -type f -name '*libquery_engine-darwin*' -exec rm {} +",
-              `find ${outputDir}/node_modules/prisma -type f -name \'*libquery_engine*\' -exec rm {} +`,
+              `cd ${outputDir}`,
+              'npm install prisma@latest',
+              'npm install @prisma/client@latest',
+              'npx prisma generate',
+              // Clean up unnecessary engine files to reduce bundle size
+              'rm -rf node_modules/@prisma/engines',
+              'find . -type f -name "*libquery_engine-*" -delete'
             ];
           },
         },
+        externalModules: [
+          'prisma',
+          '@prisma/client',
+          '@aws-sdk/*'
+        ],
       },
     });
 

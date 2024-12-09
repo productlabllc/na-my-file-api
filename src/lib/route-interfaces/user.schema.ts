@@ -3,20 +3,7 @@
  * Do not modify this file manually
  */
 
-import { PlatformActivityLogs, Workflow } from '.';
-
-export interface AddWorkFlowRequest {
-  WorkflowId: string;
-}
-
-export interface AddWorkFlowResponse {
-  Email?: string;
-  FirstName?: string;
-  IdpId?: string;
-  LastName?: string;
-  LegacyId?: string;
-  id?: string;
-}
+import { BasePlatformActivityLogs, CaseTeamAssignment, FamilyMember, PlatformActivityLogs, CaseActivityLogs } from '.';
 
 export interface CreateUserRequest {
   DOB: Date;
@@ -24,51 +11,77 @@ export interface CreateUserRequest {
   FirstName: string;
   LanguageIsoCode?: string;
   LastName: string;
-  Workflows?: string[];
 }
 
 export interface CreateUserResponse {
+  DOB?: Date;
   Email?: string;
   FirstName?: string;
   IdpId?: string;
+  LanguageIsoCode?: string;
   LastName?: string;
   LegacyId?: string;
+  PlatformActivityLogs?: BasePlatformActivityLogs[];
+  TOSAccepted?: boolean;
+  TOSAcceptedAt?: Date;
   id?: string;
 }
 
-export interface DeleteWorkFlowRequest {
-  WorkflowId: string;
-}
-
-export interface DeleteWorkFlowResponse {
+export interface GetUser {
+  CaseTeamAssignments?: CaseTeamAssignment[];
+  DOB?: Date;
   Email?: string;
   FirstName?: string;
   IdpId?: string;
+  LanguageIsoCode?: string;
   LastName?: string;
   LegacyId?: string;
+  TOSAccepted?: boolean;
+  TOSAcceptedAt?: Date;
+  UserFamilyMembers?: FamilyMember[];
   id?: string;
+}
+
+export interface GetUserActivitiesResponse {
+  currentPage?: number;
+  items?: PlatformActivityLogs[];
+  pageSize?: number;
+  total?: number;
+  totalPages?: number;
 }
 
 export interface GetUserActivityQuery {
-  filters?: {
-    fromDate?: Date;
-    toDate?: Date;
-  };
-  limit?: number;
+  activityTypes?: string;
+  from?: Date;
   page?: number;
+  pageSize?: number;
+  to?: Date;
 }
 
 export interface GetUserActivityResponse {
-  items?: PlatformActivityLogs[];
-  limit?: number;
-  page?: number;
+  items?: CaseActivityLogs[];
+  skip?: number;
+  take?: number;
   total?: number;
+  totalPages?: number;
 }
 
-export type GetUserWorkFlowsResponse = Workflow[];
+export type GetUsesCases = {
+  CaseTeamAssignments?: CaseTeamAssignment[];
+  DOB?: Date;
+  Email?: string;
+  FirstName?: string;
+  IdpId?: string;
+  LanguageIsoCode?: string;
+  LastName?: string;
+  LegacyId?: string;
+  TOSAccepted?: boolean;
+  TOSAcceptedAt?: Date;
+  id?: string;
+}[];
 
 export interface UpdateUserRequest {
-  DOB?: Date;
+  DOB?: Date | null;
   Email?: string;
   FirstName?: string;
   LanguageIsoCode?: string;
@@ -79,19 +92,43 @@ export interface UpdateUserRequest {
 }
 
 export interface UpdateUserResponse {
+  DOB?: Date;
   Email?: string;
   FirstName?: string;
   IdpId?: string;
+  LanguageIsoCode?: string;
   LastName?: string;
   LegacyId?: string;
+  PlatformActivityLogs?: BasePlatformActivityLogs[];
+  TOSAccepted?: boolean;
+  TOSAcceptedAt?: Date;
   id?: string;
 }
 
 export interface User {
+  DOB?: Date;
   Email?: string;
   FirstName?: string;
   IdpId?: string;
+  LanguageIsoCode?: string;
   LastName?: string;
   LegacyId?: string;
+  PlatformActivityLogs?: BasePlatformActivityLogs[];
+  TOSAccepted?: boolean;
+  TOSAcceptedAt?: Date;
+  id?: string;
+}
+
+export interface UserCaseItem {
+  CaseTeamAssignments?: CaseTeamAssignment[];
+  DOB?: Date;
+  Email?: string;
+  FirstName?: string;
+  IdpId?: string;
+  LanguageIsoCode?: string;
+  LastName?: string;
+  LegacyId?: string;
+  TOSAccepted?: boolean;
+  TOSAcceptedAt?: Date;
   id?: string;
 }

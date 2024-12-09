@@ -31,7 +31,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
   const user = await getUserByEmail(jwt?.email);
 
-  const userId = user.id;
+  const userId = user?.id;
 
   const dataUpdateKeys = Object.keys(requestBody) as Array<keyof UpdateFamilyMemberRequest>;
   dataUpdateKeys.forEach(key => {
@@ -43,6 +43,8 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   const newData = { ...requestBody } as Partial<typeof requestBody>;
   delete newData.id;
 
+  const existingValue = await db.userFamilyMember.findFirst({ where: { id: requestBody.id } });
+
   const updatedUser = await db.userFamilyMember.update({
     data: newData,
     where: {
@@ -52,6 +54,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
       },
     },
     select: {
+      id: true,
       User: true,
       FirstName: true,
       LastName: true,
@@ -64,10 +67,11 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
   });
 
   await logActivity({
-    activityType: 'UPDATE_FAMILY_MEMBER',
-    activityValue: `User (${user.Email} - ${user.IdpId}) updated family member (${requestBody}).`,
-    userId: user.id,
+    activityType: 'CLIENT_UPDATE_FAMILY_MEMBER',
+    activityValue: JSON.stringify({ oldValue: existingValue, newValue: updatedUser }),
+    userId: user!.id,
     timestamp: new Date(),
+    familyMemberIds: [updatedUser.id],
     metadataJson: JSON.stringify({ request: input }),
     activityRelatedEntityId: requestBody.id,
     activityRelatedEntity: 'FAMILY_MEMBER',

@@ -6,13 +6,14 @@ import {
   jwtValidationMiddleware,
   schemaValidationMiddleware,
 } from 'aws-lambda-api-tools';
-import userSchema from '../../lib/route-schemas/user.schema';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getDB } from '../../lib/db';
+import { BaseUserSchema } from '../../lib/route-schemas/base-models.schema';
+import createNycUser from '../../lib/data/create-user-nyc';
 
 export const routeSchema: RouteSchema = {
-  responseBody: userSchema,
+  responseBody: BaseUserSchema,
 };
 
 export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArguments) => {
@@ -21,15 +22,15 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     const jwt: CognitoJwtType = input.routeData.jwt;
     let user = await getUserByEmail(jwt?.email);
     if (!user) {
-      await db.user.create({
-        data: {
-          Email: jwt?.email,
-          FirstName: jwt?.given_name,
-          LastName: jwt?.family_name,
-          IdpId: jwt?.sub,
-        },
+      const newUser = await createNycUser({
+        FirstName: jwt.given_name,
+        LastName: jwt.family_name,
+        GUID: jwt.sub,
+        IdpId: jwt.sub,
+        Email: jwt.email,
       });
-      user = await getUserByEmail(jwt?.email);
+
+      return newUser;
     }
     return user;
   } catch (e) {

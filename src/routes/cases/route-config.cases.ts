@@ -43,6 +43,22 @@ const caseRoutes = [
     method: 'GET',
     path: `${routesBaseUrlPath}/cases`,
   },
+  {
+    description: 'Get User Cases Admin',
+    swaggerMethodName: 'getUserCasesAdmin',
+    generateOpenApiDocs: true,
+    handlerPath: join(routesSourceBaseDirectory, 'cases/get-cases-by-user-id'),
+    method: 'GET',
+    path: `${routesBaseUrlPath}/cases/user/{userId}`,
+  },
+  {
+    description: 'Log View Family Member',
+    swaggerMethodName: 'logViewCaseFamilyMember',
+    generateOpenApiDocs: true,
+    handlerPath: join(routesSourceBaseDirectory, 'cases/log-view-case-family-member'),
+    method: 'POST',
+    path: `${routesBaseUrlPath}/cases/family-member/log-view`,
+  },
 ] as Array<ConfigRouteEntry>;
 
 export default caseRoutes;

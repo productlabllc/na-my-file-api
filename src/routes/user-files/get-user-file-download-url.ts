@@ -13,11 +13,12 @@ import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getPresignedDownloadUrl } from '../../lib/s3';
 import { EnvironmentVariablesEnum } from '../../lib/environment';
-import { CAN_DOWNLOAD_USER_FILE } from '../../lib/constants';
+import { S3Prefix } from '../../lib/constants';
 
 export const routeSchema: RouteSchema = {
   query: {
     fileId: joi.string().required().uuid(),
+    disposition: joi.string().valid('attachment', 'inline'),
     uploadVersionId: joi.string().required().uuid(),
   },
   responseBody: GetUserFileDownloadUrlResponseSchema,
@@ -33,9 +34,11 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     const userId = user.id;
 
-    const canDownloadFile = await user.isUserInGroup(CAN_DOWNLOAD_USER_FILE);
-
-    const { fileId, uploadVersionId } = input.query as { fileId: string; uploadVersionId: string };
+    const {
+      fileId,
+      uploadVersionId,
+      disposition = 'inline',
+    } = input.query as { fileId: string; uploadVersionId: string; disposition: 'attachment' | 'inline' };
 
     const userFile = await db.userFile.findFirst({
       where: {
@@ -46,17 +49,33 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     const userHasFile = userFile?.OwnerUserId === userId;
 
-    if (!canDownloadFile && !userHasFile) {
-      throw new CustomError('User does not have permission to download this file', 403);
+    if (!userHasFile) {
+      throw new CustomError(JSON.stringify({ message: 'User does not have permission to download this file' }), 403);
     }
 
     if (!userFile) {
-      throw new CustomError(`File ${fileId} not found`, 404);
+      throw new CustomError(JSON.stringify({ message: `File ${fileId} not found` }), 404);
+    }
+
+    const fileVersion = await db.uploadedMediaAssetVersion.findFirst({
+      where: {
+        id: uploadVersionId,
+        DeletedAt: null,
+      },
+    });
+
+    if (!fileVersion) {
+      throw new CustomError(
+        JSON.stringify({ message: `File ${fileId} with version id ${uploadVersionId} not found` }),
+        404,
+      );
     }
 
     const presignedUrl = await getPresignedDownloadUrl(
-      EnvironmentVariablesEnum.CLIENT_FILE_BUCKET_NAME,
-      `${userId}/${fileId}/${uploadVersionId}`,
+      process.env[EnvironmentVariablesEnum.CLIENT_FILE_BUCKET_NAME]!,
+      `${S3Prefix.USER_FILES}${userId}/${fileId}/${uploadVersionId}/${fileVersion.OriginalFilename}`,
+      fileVersion.OriginalFilename!,
+      disposition,
     );
 
     return {

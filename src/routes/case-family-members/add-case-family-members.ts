@@ -18,8 +18,9 @@ import {
 import { AddCaseFamilyMembersRequest } from '../../lib/route-interfaces';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
-import { CASE_OWNER } from '../../lib/constants';
-import { logActivity } from '../../lib/sqs';
+import { CLIENT } from '../../lib/constants';
+import { logActivity, triggerCaseCriterionCalculation } from '../../lib/sqs';
+import { ActivityLogMessageType } from '../../lib/types-and-interfaces';
 
 const routeSchema: RouteSchema = {
   params: {
@@ -50,12 +51,12 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
         CaseTeamAssignments: {
           every: {
             UserId: userId,
-            CaseRole: CASE_OWNER,
+            CaseRole: CLIENT,
           },
         },
       },
     },
-    select: {
+    include: {
       CaseApplicants: {
         where: {
           UserFamilyMemberId: {
@@ -78,8 +79,10 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     if (existingCase.CaseApplicants.length) {
       throw new CustomError(
-        `Case Applicants already exists: 
+        JSON.stringify({
+          message: `Case Applicants already exists: 
         ${existingCase.CaseApplicants.map(ele => ele.UserFamilyMemberId).join(', ')}`,
+        }),
         409,
       );
     }
@@ -96,26 +99,31 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     });
 
     if (userFamilyMembers.length !== requestBody.length) {
-      throw new CustomError('User does not have all these family members', 400);
+      throw new CustomError(JSON.stringify({ message: 'User does not have all these family members' }), 400);
     }
 
     const data = await db.caseApplicant.createMany({
       data: caseParticipants,
     });
 
-    await logActivity({
-      activityType: 'ADD_CASE_FAMILY_MEMBERS',
-      activityValue: `User (${user.Email} - ${userId}) added family members (${requestBody.map(item => item.UserFamilyMemberId)})`,
+    await triggerCaseCriterionCalculation({ caseId });
+
+    const activityData: ActivityLogMessageType = {
+      activityType: 'CLIENT_ADD_CASE_FAMILY_MEMBERS',
+      activityValue: JSON.stringify({ newValue: userFamilyMembers, case: existingCase }),
       userId: userId!,
+      familyMemberIds: userFamilyMembers.map(fm => fm.id),
       timestamp: new Date(),
       metadataJson: JSON.stringify({ request: input, affectedRows: data.count }),
       activityRelatedEntityId: caseId,
-      activityRelatedEntity: 'CASE',
-    });
+      activityRelatedEntity: 'CASE_FAMILY_MEMBER',
+    };
+
+    await logActivity({ ...activityData, activityRelatedEntity: 'CASE', activityCategory: 'case' });
 
     return data;
   } else {
-    throw new CustomError('Case Not Found', 404);
+    throw new CustomError(JSON.stringify({ message: 'Case Not Found' }), 404);
   }
 };
 

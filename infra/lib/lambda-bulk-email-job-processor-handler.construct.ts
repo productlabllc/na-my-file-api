@@ -63,7 +63,7 @@ export class BulkEmailJobProcessorHandlerConstruct extends Construct {
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              `npx prisma generate`,
+              `./node_modules/.bin/prisma generate`,
               `rm -rf ${outputDir}/node_modules/@prisma/engines`,
               "find . -type f -name '*libquery_engine-darwin*' -exec rm {} +",
               `find ${outputDir}/node_modules/prisma -type f -name \'*libquery_engine*\' -exec rm {} +`,

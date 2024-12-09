@@ -3,9 +3,11 @@
  * Do not modify this file manually
  */
 
+export * from './base-models.schema';
 export * from './case-applicant.schema';
 export * from './case-file.schema';
 export * from './case.schema';
+export * from './constants.schema';
 export * from './family-member.schema';
 export * from './language.schema';
 export * from './platform-activity.schema';

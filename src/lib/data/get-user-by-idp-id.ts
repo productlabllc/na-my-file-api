@@ -1,4 +1,3 @@
-import { CustomError } from 'aws-lambda-api-tools';
 import { getDB } from '../db';
 
 export const getUserByEmail = async (email: string) => {
@@ -11,11 +10,6 @@ export const getUserByEmail = async (email: string) => {
       CaseCriteria: true,
       UserFamilyMembers: true,
       UserFiles: true,
-      UserWorkflows: {
-        include: {
-          Workflow: true,
-        },
-      },
       CaseTeamAssignments: true,
       CaseNotes: true,
       StakeholderGroupRoles: {
@@ -25,5 +19,5 @@ export const getUserByEmail = async (email: string) => {
       },
     },
   });
-  return user;
+  return user!;
 };

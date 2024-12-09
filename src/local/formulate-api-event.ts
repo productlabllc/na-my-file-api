@@ -28,7 +28,7 @@ export default function formulateApiEvent({
     path = path.replace(routesBaseUrlPath, '');
 
     for (let route of routesConfig.routes) {
-      const test = route.path.match(dynamicPathRegex)
+      const test = route.path.match(dynamicPathRegex);
 
       const params = {} as Record<string, string>;
 

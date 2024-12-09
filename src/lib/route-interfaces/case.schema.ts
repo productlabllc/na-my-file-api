@@ -3,7 +3,24 @@
  * Do not modify this file manually
  */
 
-import { CaseApplicant, UserFile, User } from '.';
+import {
+  CaseApplicant,
+  CaseAttributes,
+  BaseCase,
+  BaseCaseFile,
+  UserBase,
+  WorkflowStageCriterion,
+  GeneratedUserFile,
+  BaseCaseNote,
+  BaseCasePrimitives,
+} from '.';
+
+export interface AddCaseNoteRequest {
+  CaseId: string;
+  NoteAudienceScope?: string;
+  NoteText: string;
+  ParentNodeId?: string;
+}
 
 export interface Case {
   AgencyCaseIdentifier?: string;
@@ -14,43 +31,60 @@ export interface Case {
   CaseNotes?: CaseNote[];
   CaseTeamAssignments?: CaseTeamAssignment[];
   CaseType?: string;
+  CreatedAt?: Date;
   PercentComplete?: number;
+  SSN?: string;
+  Status?: string;
   Title?: string;
   id: string;
 }
 
-export type CaseAttributes = {
-  name: string;
-  value: string;
-}[];
+export type CaseCriteria = CaseCriterion[];
 
 export interface CaseCriterion {
-  Case?: object;
+  Case?: BaseCase;
+  CaseFiles?: BaseCaseFile[];
   CaseId?: string;
-  LastModifiedByUser?: object;
+  CreatedAt?: Date;
+  CriterionFulfillmentStatus?: 'PENDING' | 'DONE';
+  CriterionFulfillmentType?: string;
+  CriterionGroupName?: string;
+  CriterionSubGroupName?: string;
+  Index?: string;
+  LastModifiedByUser?: UserBase;
   LastModifiedByUserId?: string;
+  Name?: string;
+  RuleSets?: any;
   Status?: string;
   UserId?: string;
-  WorkflowStageCriterion?: object;
+  WorkflowStageCriterion?: WorkflowStageCriterion;
   WorkflowStageCriterionId?: string;
   id: string;
 }
 
 export interface CaseFile {
-  Case?: object;
+  Case?: BaseCase;
+  CaseCriterion?: CaseCriterion;
+  CaseCriterionId?: string;
   CaseId?: string;
+  CreatedAt?: Date;
+  CreatedByAgentUser?: UserBase;
+  CreatedByAgentUserId?: string;
   CreatedByUserId?: string;
-  UserFile?: UserFile;
+  GeneratedFile?: GeneratedUserFile;
+  ReasonForResubmit?: string;
+  Status: 'PENDING' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECT';
   UserFileId?: string;
   id: string;
 }
 
 export interface CaseNote {
-  AuthorUser?: User;
+  AuthorUser?: UserBase;
   AuthorUserId?: string;
   CaseId?: string;
-  CaseNote?: object;
-  CaseNoteReplies?: object[];
+  CaseNote?: BaseCaseNote;
+  CaseNoteReplies?: BaseCaseNote[];
+  CreatedAt?: Date;
   NoteAudienceScope?: string;
   NoteText?: string;
   ParentNoteId?: string;
@@ -58,20 +92,32 @@ export interface CaseNote {
 }
 
 export interface CaseTeamAssignment {
-  Case?: object;
+  Case?: BaseCase;
   CaseId?: string;
   CaseRole?: string;
-  User?: User;
+  User?: UserBase;
   UserId?: string;
   id: string;
+  CreatedAt?: Date;
+}
+
+export interface CaseTeamAssignmentWithCasePrimitives {
+  Case?: BaseCasePrimitives;
+  CaseId?: string;
+  CaseRole?: string;
+  User?: UserBase;
+  UserId?: string;
+  id: string;
+  CreatedAt?: Date;
 }
 
 export interface CreateCaseRequestBody {
   CaseAttributes?: CaseAttributes;
-  CaseIdentifier: string;
+  CaseIdentifier?: string;
   CaseTitle?: string;
   CaseType: string;
   FamilyMemberIds?: string[];
+  SSN?: string;
   WorkflowId: string;
 }
 
@@ -84,10 +130,17 @@ export interface CreateCaseResponse {
   CaseNotes?: CaseNote[];
   CaseTeamAssignments?: CaseTeamAssignment[];
   CaseType?: string;
+  CreatedAt?: Date;
   PercentComplete?: number;
+  SSN?: string;
+  Status?: string;
   Title?: string;
   id: string;
 }
+
+export type CriteriaCaseFilesResponse = CaseFile[];
+
+export type GetCaseNotesResponse = CaseNote[];
 
 export interface GetCaseResponse {
   AgencyCaseIdentifier?: string;
@@ -98,14 +151,31 @@ export interface GetCaseResponse {
   CaseNotes?: CaseNote[];
   CaseTeamAssignments?: CaseTeamAssignment[];
   CaseType?: string;
+  CreatedAt?: Date;
   PercentComplete?: number;
+  SSN?: string;
+  Status?: string;
   Title?: string;
   id: string;
 }
 
-export type GetCaseUserFilesResponse = UserFile[];
+export type GetCaseUserFilesResponse = GeneratedUserFile[];
+
+export type GetCasesResponse = Case[];
 
 export type GetUserFileCasesResponse = Case[];
+
+export interface UpdateCaseCriterion {
+  CriterionFulfillmentStatus: 'PENDING' | 'DONE';
+  CriterionGroupName?: string;
+  CriterionSubGroupName?: string;
+  Name?: string;
+}
+
+export interface UpdateCaseNoteRequest {
+  NoteText: string;
+  id: string;
+}
 
 export interface UpdateCaseRequestBody {
   AgencyCaseIdentifier?: string;
@@ -113,7 +183,8 @@ export interface UpdateCaseRequestBody {
   CaseTitle?: string;
   CaseType?: string;
   PercentComplete?: number;
-  Status?: string;
+  SSN?: string;
+  Status?: 'OPEN' | 'CLOSED';
 }
 
 export interface UpdateCaseResponse {
@@ -125,9 +196,10 @@ export interface UpdateCaseResponse {
   CaseNotes?: CaseNote[];
   CaseTeamAssignments?: CaseTeamAssignment[];
   CaseType?: string;
+  CreatedAt?: Date;
   PercentComplete?: number;
+  SSN?: string;
+  Status?: string;
   Title?: string;
   id: string;
 }
-
-export type getCaseResponse = Case[];

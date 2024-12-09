@@ -3,14 +3,38 @@
  * Do not modify this file manually
  */
 
+import { GeneratedUserFile } from '.';
+
 export interface AddCaseFileRequest {
-  UserFileIds: string[];
+  CaseCriterionId?: string;
+  GeneratedFileIds: string[];
 }
 
 export interface DeleteCaseFileRequest {
-  UserFileIds: string[];
+  CaseCriterionId?: string;
+  GeneratedFileIds: string[];
+}
+
+export type GetCaseListingResponse = {
+  GeneratedFile?: GeneratedUserFile;
+  ReasonForResubmit?: string;
+  Status: 'PENDING' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECT';
+  id: string;
+}[];
+
+export interface LogDownloadCaseFile {
+  caseFileIds: string[];
+}
+
+export interface LogPreviewCaseFile {
+  caseFileId: string;
+}
+
+export interface LogViewCaseFamilyMember {
+  CaseId: string;
 }
 
 export interface UpdateCaseFileRequest {
-  Status: string;
+  ReasonForResubmit?: string;
+  Status?: 'PENDING' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECT';
 }

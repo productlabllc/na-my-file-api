@@ -37,11 +37,27 @@ export default [
     path: `${routesBaseUrlPath}/users/activities`,
   },
   {
+    description: 'Get User Cases',
+    swaggerMethodName: 'getUsersCases',
+    generateOpenApiDocs: true,
+    handlerPath: join(routesSourceBaseDirectory, 'users/get-users-cases'),
+    method: 'GET',
+    path: `${routesBaseUrlPath}/users/cases`,
+  },
+  {
     description: 'Delete user',
     swaggerMethodName: 'deleteUser',
     generateOpenApiDocs: true,
     handlerPath: join(routesSourceBaseDirectory, 'users/delete-user'),
     method: 'DELETE',
     path: `${routesBaseUrlPath}/users`,
+  },
+  {
+    description: 'Get User Admin',
+    swaggerMethodName: 'getUserAdmin',
+    generateOpenApiDocs: true,
+    handlerPath: join(routesSourceBaseDirectory, 'users/get-user-by-id'),
+    method: 'GET',
+    path: `${routesBaseUrlPath}/users/{userId}`,
   },
 ] as Array<ConfigRouteEntry>;

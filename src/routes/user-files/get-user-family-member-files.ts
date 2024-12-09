@@ -11,7 +11,7 @@ import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { GetUserFilesResponseSchema } from '../../lib/route-schemas/user-file.schema';
 import Joi = require('joi');
-import { CAN_DOWNLOAD_USER_FILE, USER_FILE_STATUS } from '../../lib/constants';
+import { USER_FILE_STATUS } from '../../lib/constants';
 
 export const routeSchema: RouteSchema = {
   params: {
@@ -33,11 +33,10 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
 
     const userId = input.params.userId as string;
 
-    const canDownloadFile = await user.isUserInGroup(CAN_DOWNLOAD_USER_FILE);
     const ownedByUser = userId === user.id;
 
-    if (!canDownloadFile && !ownedByUser) {
-      throw new CustomError('User does not have permission to download this file', 403);
+    if (!ownedByUser) {
+      throw new CustomError(JSON.stringify({ message: 'User does not have permission to download this file' }), 403);
     }
 
     const { userFamilyId } = input.query as { userFamilyId: string };

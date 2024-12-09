@@ -6,4 +6,5 @@ export const LanguageSchema = joi
     Name: joi.string().required(),
     Code: joi.string().required(),
     CreatedAt: joi.date().required(),
-  }).meta({ className: 'Language' });
+  })
+  .meta({ className: 'Language' });

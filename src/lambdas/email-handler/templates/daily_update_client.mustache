@@ -1,0 +1,14 @@
+{{>header}}
+
+      <h2 style="text-align: center;">Hello {{firstName}} {{lastName}}</h2>
+      <br/>
+      <br/>
+      <p style="text-align: center;">Client daily updates example.</p>
+
+      <ul>
+        {{#updates}}
+        <li>{{message}}</li>
+        {{/updates}}
+      </ul>
+
+{{>footer}}
