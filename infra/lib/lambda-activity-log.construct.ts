@@ -8,7 +8,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
@@ -40,6 +40,7 @@ export class LambdaActivityLogConstruct extends Construct {
     this.activityLogHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
+      architecture: Architecture.X86_64,
       runtime: Runtime.NODEJS_18_X,
       vpc,
       memorySize: props.lambdaMemorySizeInMb,
@@ -66,6 +67,9 @@ export class LambdaActivityLogConstruct extends Construct {
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
+              // `cd ${outputDir}`,
+              // 'npm ci',
+              // `cp -R ${inputDir}/node_modules/prisma ${outputDir}/`,
               `./node_modules/.bin/prisma generate`,
               `rm -rf ${outputDir}/node_modules/@prisma/engines`,
               "find . -type f -name '*libquery_engine-darwin*' -exec rm {} +",

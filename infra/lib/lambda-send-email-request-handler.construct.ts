@@ -8,7 +8,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { InterfaceVpcEndpointAwsService } from 'aws-cdk-lib/aws-ec2';
@@ -51,6 +51,7 @@ export class LambdaSendEmailRequestHandlerConstruct extends Construct {
     this.lambdaHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
+      architecture: Architecture.X86_64,
       runtime: Runtime.NODEJS_18_X,
       // vpc,
       memorySize: props.lambdaMemorySizeInMb,

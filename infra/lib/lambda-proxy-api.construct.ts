@@ -12,7 +12,7 @@ import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations
 import { Construct } from 'constructs';
 import { RouteConfig } from 'aws-lambda-api-tools';
 import { ExtendedStackProps } from './stack-interfaces';
-import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { CustomHttpLambdaIntegration } from './CustomHttpLambdaIntegration';
@@ -58,6 +58,7 @@ export class LambdaProxyApi extends Construct {
       this,
       `${lambdaRouteProxyEntryHandlerName}-${deploymentTarget}`,
       {
+        architecture: Architecture.X86_64,
         runtime: Runtime.NODEJS_18_X,
         functionName: `${lambdaRouteProxyEntryHandlerName}-${deploymentTarget}`,
         entry: props.lambdaMainHandlerPath,
@@ -74,9 +75,6 @@ export class LambdaProxyApi extends Construct {
         },
         loggingFormat: LoggingFormat.JSON,
         logRetention: RetentionDays.ONE_WEEK,
-        // bundling: {
-        //   nodeModules: props.noBundlingNodeModules,
-        // },
         bundling: {
           nodeModules: ['prisma', '@prisma/client'],
           commandHooks: {

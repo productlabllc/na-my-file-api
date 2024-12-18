@@ -9,7 +9,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { Code, LayerVersion, LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Code, LayerVersion, LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -54,6 +54,7 @@ export class LambdaPdfGeneratorConstruct extends Construct {
     this.pdfGeneratorHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
+      architecture: Architecture.X86_64,
       runtime: Runtime.NODEJS_18_X,
       vpc,
       layers: [this.graphicMagicLayer.layer],

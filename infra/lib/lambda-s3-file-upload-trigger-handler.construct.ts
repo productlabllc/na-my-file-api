@@ -9,7 +9,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ExtendedStackProps } from './stack-interfaces';
-import { LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { S3EventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { S3Prefix } from '../../src/lib/constants';
@@ -45,6 +45,7 @@ export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
     this.s3FileUploadHandler = new lambdaNodeJS.NodejsFunction(this, props.name, {
       functionName: `${props.name}-${deploymentTarget}`,
       entry: props.lambdaMainHandlerPath,
+      architecture: Architecture.X86_64,
       runtime: Runtime.NODEJS_18_X,
       vpc,
       memorySize: props.lambdaMemorySizeInMb,
