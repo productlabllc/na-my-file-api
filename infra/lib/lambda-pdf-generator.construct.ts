@@ -17,13 +17,12 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { join } from 'path';
 
 interface LambdaPdfGeneratorProps extends ExtendedStackProps {
-  // Add properties here
   name: string;
   ssmVpcId: string;
   ssmHttpApiId: string;
   iamPolicy?: iam.PolicyStatement;
   envVars: { [key: string]: string };
-  noBundlingNodeModules: Array<string>;
+  noBundlingNodeModules: string[];
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
@@ -64,29 +63,43 @@ export class LambdaPdfGeneratorConstruct extends Construct {
       logRetention: RetentionDays.ONE_DAY,
       events: [new SqsEventSource(pdfGeneratorQueue)],
       // vpc,
-      environment: {
-        ...props.envVars,
-        TIMESTAMP: Date.now().toString(),
-      },
-
       bundling: {
-        nodeModules: ['prisma', '@prisma/client'],
+        nodeModules: ['prisma', '@prisma/client', 'gm', 'pdf-lib', 'image-size'],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
-            return [];
+            return [`cp ${inputDir}/prisma/schema.prisma ${outputDir}/schema.prisma`];
           },
-          beforeInstall(inputDir: string, outputDir: string) {
-            return [`cp -R ./prisma ${outputDir}/`];
+          beforeInstall(inputDir: string, outputDir: string): string[] {
+            return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              `./node_modules/.bin/prisma generate`,
-              `rm -rf ${outputDir}/node_modules/@prisma/engines`,
-              "find . -type f -name '*libquery_engine-darwin*' -exec rm {} +",
-              `find ${outputDir}/node_modules/prisma -type f -name \'*libquery_engine*\' -exec rm {} +`,
+              `cd ${outputDir}`,
+              'npm install prisma@latest',
+              'npm install @prisma/client@latest',
+              'npx prisma generate --schema=./schema.prisma',
+              // Clean up unnecessary Prisma files
+              'rm -rf node_modules/@prisma/engines-version',
+              'rm -rf node_modules/@prisma/engines/introspection-engine*',
+              'rm -rf node_modules/@prisma/engines/migration-engine*',
+              'rm -rf node_modules/@prisma/engines/prisma-fmt*',
+              // Keep only the RHEL engine
+              'find . -type f -name "libquery_engine-*" ! -name "libquery_engine-rhel-*" -delete',
+              // Clean up the schema after generation
+              'rm ./schema.prisma',
             ];
           },
         },
+        externalModules: ['@aws-sdk/*'],
+        minify: true,
+        sourceMap: true,
+        target: 'node18',
+      },
+      environment: {
+        ...props.envVars,
+        TIMESTAMP: Date.now().toString(),
+        PRISMA_CLI_QUERY_ENGINE_TYPE: 'binary',
+        PRISMA_BINARY_TARGET: 'rhel-openssl-1.0.x',
       },
     });
 

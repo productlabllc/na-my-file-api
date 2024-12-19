@@ -14,13 +14,12 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { InterfaceVpcEndpointAwsService } from 'aws-cdk-lib/aws-ec2';
 
 interface SendEmailRequestHandlerConstructProps extends ExtendedStackProps {
-  // Add properties here
   name: string;
   ssmVpcId: string;
   ssmHttpApiId: string;
   iamPolicy?: iam.PolicyStatement;
   envVars: { [key: string]: string };
-  noBundlingNodeModules: Array<string>;
+  noBundlingNodeModules: string[];
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
@@ -67,23 +66,40 @@ export class LambdaSendEmailRequestHandlerConstruct extends Construct {
       },
       events: [new SqsEventSource(props.sqsSendEmailRequestQueue)],
       bundling: {
-        nodeModules: ['prisma', '@prisma/client'],
+        nodeModules: [
+          'prisma',
+          '@prisma/client',
+          'mustache', // Add mustache to the bundled dependencies
+        ],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
-            return [`cp -R ${inputDir}/src/lambdas/email-handler/templates ${outputDir}/templates`];
+            return [`cp ${inputDir}/prisma/schema.prisma ${outputDir}/schema.prisma`];
           },
-          beforeInstall(inputDir: string, outputDir: string) {
-            return [`cp -R ./prisma ${outputDir}/`];
+          beforeInstall(inputDir: string, outputDir: string): string[] {
+            return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              `./node_modules/.bin/prisma generate`,
-              `rm -rf ${outputDir}/node_modules/@prisma/engines`,
-              "find . -type f -name '*libquery_engine-darwin*' -exec rm {} +",
-              `find ${outputDir}/node_modules/prisma -type f -name \'*libquery_engine*\' -exec rm {} +`,
+              `cd ${outputDir}`,
+              'npm install prisma@latest',
+              'npm install @prisma/client@latest',
+              'npx prisma generate --schema=./schema.prisma',
+              // Clean up unnecessary Prisma files
+              'rm -rf node_modules/@prisma/engines-version',
+              'rm -rf node_modules/@prisma/engines/introspection-engine*',
+              'rm -rf node_modules/@prisma/engines/migration-engine*',
+              'rm -rf node_modules/@prisma/engines/prisma-fmt*',
+              // Keep only the RHEL engine
+              'find . -type f -name "libquery_engine-*" ! -name "libquery_engine-rhel-*" -delete',
+              // Clean up the schema after generation
+              'rm ./schema.prisma',
             ];
           },
         },
+        externalModules: ['@aws-sdk/*'],
+        minify: true,
+        sourceMap: true,
+        target: 'node18',
       },
     });
 

@@ -17,13 +17,12 @@ import { Bucket, EventType } from 'aws-cdk-lib/aws-s3';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
 interface S3FileUploadTriggerHandlerConstructProps extends ExtendedStackProps {
-  // Add properties here
   name: string;
   ssmVpcId: string;
   ssmHttpApiId: string;
   iamPolicy?: iam.PolicyStatement;
   envVars: { [key: string]: string };
-  noBundlingNodeModules: Array<string>;
+  noBundlingNodeModules: string[];
   lambdaMainHandlerPath: string;
   lambdaMemorySizeInMb: number;
   lambdaTimeoutInSeconds: number;
@@ -58,13 +57,14 @@ export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
         ...props.envVars,
         TIMESTAMP: Date.now().toString(),
         PRISMA_CLI_QUERY_ENGINE_TYPE: 'binary',
+        PRISMA_BINARY_TARGET: 'rhel-openssl-1.0.x',
       },
       reservedConcurrentExecutions: 1,
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
-            return [];
+            return [`cp ${inputDir}/prisma/schema.prisma ${outputDir}/schema.prisma`];
           },
           beforeInstall(inputDir: string, outputDir: string) {
             return [];
@@ -74,18 +74,20 @@ export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
               `cd ${outputDir}`,
               'npm install prisma@latest',
               'npm install @prisma/client@latest',
-              'npx prisma generate',
-              // Clean up unnecessary engine files to reduce bundle size
-              'rm -rf node_modules/@prisma/engines',
-              'find . -type f -name "*libquery_engine-*" -delete'
+              'npx prisma generate --schema=./schema.prisma',
+              'rm -rf node_modules/@prisma/engines-version',
+              'rm -rf node_modules/@prisma/engines/introspection-engine*',
+              'rm -rf node_modules/@prisma/engines/migration-engine*',
+              'rm -rf node_modules/@prisma/engines/prisma-fmt*',
+              'find . -type f -name "libquery_engine-*" ! -name "libquery_engine-rhel-*" -delete',
+              'rm ./schema.prisma',
             ];
           },
         },
-        externalModules: [
-          'prisma',
-          '@prisma/client',
-          '@aws-sdk/*'
-        ],
+        externalModules: ['@aws-sdk/*'],
+        minify: true,
+        sourceMap: true,
+        target: 'node18',
       },
     });
 
