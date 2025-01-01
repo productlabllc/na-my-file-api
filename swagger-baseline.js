@@ -2,9 +2,11 @@ module.exports = {
   openapi: '3.0.0',
   info: {
     title: 'My File',
-    description: 'This api represents a combination of all API Gateway Lambda Proxy components for My File NYC.',
+    description:
+      process.env.APP_DESCRIPTION ||
+      'This api represents a combination of all API Gateway Lambda Proxy components for My File.',
     contact: {
-      email: 'pilin@nycopportunity.nyc.gov',
+      email: process.env.TECHNICAL_CONTACT || 'email@example.com',
     },
     license: {
       name: 'Apache 2.0',
@@ -14,8 +16,8 @@ module.exports = {
   },
   servers: [
     {
-      url: 'https://dkvtc4ni4i.execute-api.us-east-1.amazonaws.com/',
-      description: 'My File NYC API (dev)',
+      url: process.env.EXISTING_HTTP_API_ENDPOINT || 'https://example.com/api',
+      description: process.env.APP_DESCRIPTION || `My File API (${process.env.DEPLOYMENT_TARGET || 'dev'})`,
     },
   ],
   tags: ['users'],
