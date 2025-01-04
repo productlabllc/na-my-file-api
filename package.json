@@ -1,5 +1,5 @@
 {
-  "name": "my-file-api",
+  "name": "na-my-file-api",
   "version": "0.1.11",
   "description": "My File Platform API",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
     "generate-oas-route-specs": "npm run build && ./node_modules/.bin/generate-oas -- ./dist/routes-config.js",
     "generate-oas-full": "./generate-oas-full-spec.js",
     "generate-oas": ". ./params.env && npm run generate-oas-route-specs && npm run generate-oas-full",
-    "generate-api-client": "npx --yes @hey-api/openapi-ts@0.48.1 -i ./custom-swagger.json -o ./api-client",
+    "generate-api-client": "npx --yes @hey-api/openapi-ts@0.48.1 -i ./custom-swagger.json -o ../na-my-file-api-client/src",
     "ci-set-npmrc": ". ./params.env && ./build-npmrc.js",
     "stack-destroy": ". ./params.env && npx cdk destroy --debug ",
     "stack-synth": ". ./params.env && npx cdk synth --debug ",
