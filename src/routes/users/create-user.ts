@@ -12,7 +12,7 @@ import { CreateUserRequest } from '../../lib/route-interfaces';
 import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getDB } from '../../lib/db';
 import { CreateUserRequestSchema, CreateUserResponseSchema } from '../../lib/route-schemas/user.schema';
-import createNycUser from '../../lib/data/create-user-nyc';
+import createUser from '../../lib/data/create-user-nyc';
 
 const routeSchema: RouteSchema = {
   requestBody: CreateUserRequestSchema,
@@ -34,7 +34,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     throw new CustomError(JSON.stringify({ message: 'User already exists' }), 409);
   }
 
-  const newUser = await createNycUser({
+  const newUser = await createUser({
     FirstName: requestBody.FirstName,
     LastName: requestBody.LastName,
     LanguageIsoCode: requestBody.LanguageIsoCode,

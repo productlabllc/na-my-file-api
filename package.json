@@ -17,6 +17,8 @@
     "stack-synth": ". ./params.env && npx cdk synth --debug ",
     "stack-diff": ". ./params.env && npx cdk diff --debug ",
     "stack-deploy": ". ./params.env && npx cdk deploy -v --debug --require-approval never",
+    "stack-deploy-dev": "DEPLOYMENT_TARGET=dev . ./params.env && npx cdk deploy -v --debug --require-approval never",
+    "stack-deploy-prod": "DEPLOYMENT_TARGET=prod . ./params.env && npx cdk deploy -v --debug --require-approval never",
     "schema-types:generate": "ts-node ./src/schema-to-interface.ts"
   },
   "author": "",

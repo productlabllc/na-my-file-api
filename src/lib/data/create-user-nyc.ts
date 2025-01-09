@@ -12,7 +12,7 @@ import {
 } from '../constants';
 import { getDB } from '../db';
 
-export default async function createNycUser(userParam: {
+export default async function createUser(userParam: {
   IdpId?: string;
   FirstName?: string;
   LastName?: string;

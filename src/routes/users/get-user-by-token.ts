@@ -10,7 +10,7 @@ import { CognitoJwtType } from '../../lib/types-and-interfaces';
 import { getUserByEmail } from '../../lib/data/get-user-by-idp-id';
 import { getDB } from '../../lib/db';
 import { BaseUserSchema } from '../../lib/route-schemas/base-models.schema';
-import createNycUser from '../../lib/data/create-user-nyc';
+import createUser from '../../lib/data/create-user-nyc';
 
 export const routeSchema: RouteSchema = {
   responseBody: BaseUserSchema,
@@ -22,7 +22,7 @@ export const handler: MiddlewareArgumentsInputFunction = async (input: RouteArgu
     const jwt: CognitoJwtType = input.routeData.jwt;
     let user = await getUserByEmail(jwt?.email);
     if (!user) {
-      const newUser = await createNycUser({
+      const newUser = await createUser({
         FirstName: jwt.given_name,
         LastName: jwt.family_name,
         GUID: jwt.sub,
