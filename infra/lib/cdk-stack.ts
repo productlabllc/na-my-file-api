@@ -44,7 +44,7 @@ export class CdkStack extends Stack {
     // Create S3 bucket to shared among sub stacks
     const bucketName = CLIENT_FILE_BUCKET_NAME;
 
-    const documentsBucket = new s3.Bucket(this, 'documents-bucket', {
+    const documentsBucket = new s3.Bucket(this, getFormattedResourceName('documents-bucket'), {
       bucketName: bucketName,
       versioned: false,
       removalPolicy: deploymentTarget === 'prod' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
@@ -52,7 +52,7 @@ export class CdkStack extends Stack {
 
     const corsRule: s3.CorsRule = {
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.DELETE],
-      allowedOrigins: ['dev', 'stage'].includes(deploymentTarget) ? ['*'] : ['https://myfile.cityofnewyork.us'],
+      allowedOrigins: ['*'],
 
       // the properties below are optional
       allowedHeaders: ['*'],
