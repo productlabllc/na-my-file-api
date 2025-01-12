@@ -494,8 +494,7 @@ export const DOCUMENT_TYPE = {
   PREVIOUSLY_SHARED_DOCUMENTS: {
     name: 'Previously Shared Documents',
     category: 'Other Documents ',
-  }
-
+  },
 } as const;
 
 type DocumentKey = keyof typeof DOCUMENT_TYPE;
@@ -550,41 +549,11 @@ export interface RuleSets {
 }
 
 type Email = string;
-export const PATH_AGENTS: Email[] = [
-  'myfile-agency-path-01@yopmail.com',
-  'myfile-agency-path-02@yopmail.com',
-  'myfile-agency-path-03@yopmail.com',
-  'myfile-agency-path-04@yopmail.com',
-  'myfile-agency-path-05@yopmail.com',
-];
-export const HPD_AGENTS: Email[] = [
-  'myfile-agency-hpd-01@yopmail.com',
-  'myfile-agency-hpd-02@yopmail.com',
-  'myfile-agency-hpd-03@yopmail.com',
-  'myfile-agency-hpd-04@yopmail.com',
-  'myfile-agency-hpd-05@yopmail.com',
-];
-export const DHS_AGENTS: Email[] = [
-  'myfile-dhs-agent-01@yopmail.com',
-  'myfile-dhs-agent-02@yopmail.com',
-  'myfile-dhs-agent-03@yopmail.com',
-  'myfile-dhs-agent-04@yopmail.com',
-  'myfile-dhs-agent-05@yopmail.com',
-];
-export const CBO_STAFF_AGENTS: Email[] = [
-  'myfile-cbo-agent-01@yopmail.com',
-  'myfile-cbo-agent-02@yopmail.com',
-  'myfile-cbo-agent-03@yopmail.com',
-  'myfile-cbo-agent-04@yopmail.com',
-  'myfile-cbo-agent-05@yopmail.com',
-];
-export const SPONSOR_USERS: Email[] = [
-  'myfile-sponsor-agent-01@yopmail.com',
-  'myfile-sponsor-agent-02@yopmail.com',
-  'myfile-sponsor-agent-03@yopmail.com',
-  'myfile-sponsor-agent-04@yopmail.com',
-  'myfile-sponsor-agent-05@yopmail.com',
-];
+export const PATH_AGENTS: Email[] = ['fadinialessandro@yahoo.it', 'path_agent@example.com'];
+export const HPD_AGENTS: Email[] = ['hpd_agent@example.com'];
+export const DHS_AGENTS: Email[] = ['dhs_agent@example.com'];
+export const CBO_STAFF_AGENTS: Email[] = ['cbo_staff@example.com'];
+export const SPONSOR_USERS: Email[] = ['sponsor@example.com'];
 export const SPONSOR_SUPERVISORS: Email[] = [];
 export const HPD_ADMINS: Email[] = [];
 export const PATH_ADMINS: Email[] = [];
