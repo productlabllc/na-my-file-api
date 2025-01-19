@@ -27,18 +27,25 @@ DB_ENDPOINT=$(aws secretsmanager get-secret-value \
   --output text | \
   node -e "process.stdin.setEncoding('utf8'); process.stdin.on('data', data => { const { host } = JSON.parse(data); console.log(host); });")
 
-# Create a temporary PEM file
-echo "${SSH_KEY}" > /tmp/temp-key.pem
-chmod 600 /tmp/temp-key.pem
+# Create a temporary PEM file with unique name
+TEMP_KEY_FILE="/tmp/temp-key-${USER}-${$}.pem"
+echo "${SSH_KEY}" > "${TEMP_KEY_FILE}"
+chmod 600 "${TEMP_KEY_FILE}"
+
+# Cleanup function
+cleanup() {
+    if [ -f "${TEMP_KEY_FILE}" ]; then
+        rm -f "${TEMP_KEY_FILE}"
+    fi
+}
+
+# Set up trap to ensure cleanup on script exit
+trap cleanup EXIT
 
 # Create the SSH tunnel
-ssh -N -i /tmp/temp-key.pem \
+ssh -o StrictHostKeyChecking=no -N -i "${TEMP_KEY_FILE}" \
 -L 54321:${DB_ENDPOINT}:5432 \
 ec2-user@${BASTION_DNS}
-
-# Clean up
-rm /tmp/temp-key.pem
-
 
 # ex url 
 # ec2-user@ec2-3-239-236-87.compute-1.amazonaws.com

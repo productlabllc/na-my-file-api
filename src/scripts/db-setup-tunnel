@@ -1,0 +1,25 @@
+#!/bin/bash
+
+## This script starts a tunnel, runs prisma commands, then closes the tunnel
+
+# Start the tunnel in the background
+./src/scripts/ssh-tunnel & 
+TUNNEL_PID=$!
+
+# Wait for the tunnel to establish
+sleep 2
+
+# Run Prisma commands
+echo "Running database migrations..."
+. ./params.env && npx prisma migrate deploy
+
+echo "Seeding database..."
+. ./params.env && npx prisma db seed
+
+# Wait before closing the tunnel
+sleep 1
+
+# Close the tunnel
+kill $TUNNEL_PID
+
+echo "Database setup complete!"
