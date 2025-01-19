@@ -1,0 +1,46 @@
+#!/bin/bash
+
+## This script is used to create a SSH tunnel to the database
+## It should be run after sourcing from params.env
+
+# Get the SSH private key directly
+SSH_KEY=$(aws secretsmanager get-secret-value \
+  --secret-id "bastion-host-keypair-mainbastion-host-keypair-main/private" \
+  --query 'SecretString' \
+  --output text)
+
+# Get the bastion host DNS
+BASTION_DNS=$(aws ssm get-parameter \
+  --name "bastionhost-main-publicdns-na-${DEPLOYMENT_TARGET}" \
+  --query "Parameter.Value" \
+  --output text)
+
+# Get the DB endpoint from the secret
+DB_SECRET_ARN=$(aws ssm get-parameter \
+  --name "db-main-secret-arn-na-${DEPLOYMENT_TARGET}" \
+  --query "Parameter.Value" \
+  --output text)
+
+DB_ENDPOINT=$(aws secretsmanager get-secret-value \
+  --secret-id "$DB_SECRET_ARN" \
+  --query 'SecretString' \
+  --output text | \
+  node -e "process.stdin.setEncoding('utf8'); process.stdin.on('data', data => { const { host } = JSON.parse(data); console.log(host); });")
+
+# Create a temporary PEM file
+echo "${SSH_KEY}" > /tmp/temp-key.pem
+chmod 600 /tmp/temp-key.pem
+
+# Create the SSH tunnel
+ssh -N -i /tmp/temp-key.pem \
+-L 54321:${DB_ENDPOINT}:5432 \
+ec2-user@${BASTION_DNS}
+
+# Clean up
+rm /tmp/temp-key.pem
+
+
+# ex url 
+# ec2-user@ec2-3-239-236-87.compute-1.amazonaws.com
+# ex DB_ENDPOINT
+# core-db-na-dev.czk26mwm6o2x.us-east-1.rds.amazonaws.com
