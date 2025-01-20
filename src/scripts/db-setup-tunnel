@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## This script starts a tunnel, runs prisma commands, then closes the tunnel
+## This script starts a tunnel, runs the necessary prisma commands, then closes the tunnel
 
 # Start the tunnel in the background
 ./src/scripts/ssh-tunnel & 
