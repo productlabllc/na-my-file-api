@@ -59,7 +59,7 @@ export class LambdaS3FileUploadTriggerHandlerConstruct extends Construct {
         PRISMA_CLI_QUERY_ENGINE_TYPE: 'binary',
         PRISMA_BINARY_TARGET: 'rhel-openssl-1.0.x',
       },
-      reservedConcurrentExecutions: 1,
+      // reservedConcurrentExecutions: 1,
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
