@@ -549,7 +549,7 @@ export interface RuleSets {
 }
 
 type Email = string;
-export const PATH_AGENTS: Email[] = ['fadinialessandro@yahoo.it', 'path_agent@example.com'];
+export const PATH_AGENTS: Email[] = ['path_agent@example.com'];
 export const HPD_AGENTS: Email[] = ['hpd_agent@example.com'];
 export const DHS_AGENTS: Email[] = ['dhs_agent@example.com'];
 export const CBO_STAFF_AGENTS: Email[] = ['cbo_staff@example.com'];

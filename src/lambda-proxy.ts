@@ -172,10 +172,6 @@ const routeModules: { [key: string]: any } = {
   'users/get-users-cases': rmUsers_GetUsersCases,
   'users/get-user-by-id': rmUsers_GetUser,
 
-  // NYCID
-  // 'nycid/token': rmNycid_Token,
-  // 'nycid/userinfo': rmNycid_UserInfo,
-
   // Messaging
   'messaging/post-message-to-ws-connections': rmMessaging_PostMessageToConnections,
 

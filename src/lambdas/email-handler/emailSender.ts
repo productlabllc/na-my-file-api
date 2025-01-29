@@ -14,7 +14,7 @@ const ses = new SES({ region: 'us-east-1' });
 
 export const sendEmail = async (opts: SendEmailData) => {
   const { template, subject, templateData, destination, forceSend = false } = opts;
-  const { EMAIL_SENDER = 'no-reply@nycopportunity.nyc.gov', WEB_APP_DOMAIN, NODE_ENV } = process.env;
+  const { EMAIL_SENDER = 'no-reply@websiteexample.com', WEB_APP_DOMAIN, NODE_ENV } = process.env;
   const emailSender = EMAIL_SENDER;
   const webAppLogoSrc = `https://${WEB_APP_DOMAIN}/images/my-file-logo-head.svg`;
   const body = renderTemplate(template, {

@@ -20,22 +20,6 @@ export const parseJwt = (token: string) => {
   return JSON.parse(jsonPayload);
 };
 
-// export const getAxiosProxyConfiguration = () => {
-//   const { NYC_HTTPS_PROXY_INFO = '{}' } = process.env;
-//   const { PROXY_HOST, PROXY_PORT, PROXY_PROTOCOL, PROXY_USERNAME, PROXY_PASSWORD } = JSON.parse(NYC_HTTPS_PROXY_INFO);
-//   console.log(`Proxy Creds:
-//   ${NYC_HTTPS_PROXY_INFO}`);
-//   return {
-//     host: PROXY_HOST,
-//     port: Number(PROXY_PORT),
-//     auth: {
-//       username: PROXY_USERNAME,
-//       password: PROXY_PASSWORD,
-//     },
-//     protocol: PROXY_PROTOCOL,
-//   } as AxiosProxyConfig;
-// };
-
 export const setupAxiosLogging = (axios: Axios) => {
   axios.interceptors.request.use(
     x => {
